@@ -31,7 +31,7 @@ export function AnimatedBackground({
   if (variant === "dots") {
     return (
       <div
-        className={`absolute inset-0 bg-[linear-gradient(to_right,#80808020_1px,transparent_1px),linear-gradient(to_bottom,#80808020_1px,transparent_1px)] bg-[size:40px_40px] opacity-60 ${className}`}
+        className={`absolute inset-0 bg-[linear-gradient(to_right,#80808020_1px,transparent_1px),linear-gradient(to_bottom,#80808020_1px,transparent_1px)] bg-[size:80px_80px] opacity-60 ${className}`}
       />
     );
   }

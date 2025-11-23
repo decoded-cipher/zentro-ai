@@ -3,43 +3,58 @@
 import * as React from "react";
 
 export interface LogoProps {
-  size?: "sm" | "md" | "lg";
-  showText?: boolean;
   className?: string;
-  onClick?: () => void;
   as?: React.ElementType;
   href?: string;
+  theme?: "light" | "dark" | "system" | string | null;
 }
 
 export const Logo = React.forwardRef<HTMLDivElement, LogoProps>(
-  ({ size = "md", showText = true, className = "", onClick, as: Component = "div", href }, ref) => {
-    const sizeClasses = {
-      sm: "w-6 h-6 text-xs",
-      md: "w-7 h-7 text-xs",
-      lg: "w-8 h-8 text-sm",
-    };
+  ({ className = "", as: Component = "div", href, theme }, ref) => {
+    const [resolvedTheme, setResolvedTheme] = React.useState<"light" | "dark">("light");
+    const [mounted, setMounted] = React.useState(false);
 
-    const textSizeClasses = {
-      sm: "text-sm",
-      md: "text-base",
-      lg: "text-lg",
-    };
+    React.useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    React.useEffect(() => {
+      if (!mounted) return;
+
+      if (theme === "system") {
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const updateTheme = () => {
+          setResolvedTheme(mediaQuery.matches ? "dark" : "light");
+        };
+        updateTheme();
+        mediaQuery.addEventListener("change", updateTheme);
+        return () => mediaQuery.removeEventListener("change", updateTheme);
+      } else if (theme === "dark") {
+        setResolvedTheme("dark");
+      } else {
+        setResolvedTheme("light");
+      }
+    }, [theme, mounted]);
+
+    const isDark = resolvedTheme === "dark";
 
     const content = (
       <div
         ref={ref}
-        className={`flex items-center gap-2.5 hover:opacity-80 transition-all duration-200 group ${className}`}
-        onClick={onClick}
+        className={`h-9 w-auto min-w-[100px] flex-shrink-0 ${className}`}
       >
-        <div
-          className={`bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-lg group-hover:scale-110 transition-all duration-200 animate-pulse-glow ${sizeClasses[size]}`}
-        >
-          <span className="text-white font-semibold">Z</span>
-        </div>
-        {showText && (
-          <span className={`font-semibold tracking-tight ${textSizeClasses[size]}`}>
-            Zentro AI
-          </span>
+        {isDark ? (
+          <img
+            src="/logo_white.png"
+            alt="Zentro AI Logo"
+            className="h-full w-full object-contain object-left"
+          />
+        ) : (
+          <img
+            src="/logo_black.png"
+            alt="Zentro AI Logo"
+            className="h-full w-full object-contain object-left"
+          />
         )}
       </div>
     );

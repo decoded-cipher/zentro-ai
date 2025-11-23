@@ -40,14 +40,14 @@ export function ThemeToggle() {
     { value: "system", label: "System", icon: DesktopIcon },
   ];
 
-  const currentTheme = themes.find((t) => t.value === theme) || themes[2];
+  const currentTheme = themes.find((t) => t.value === theme) ?? themes[2];
   const CurrentIcon = currentTheme.icon;
 
   return (
     <div className="relative theme-toggle-container">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-all duration-200 hover:bg-muted hover:border-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded border border-border bg-background text-foreground transition-all duration-200 hover:bg-muted hover:border-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         aria-label="Toggle theme"
       >
         <CurrentIcon className="h-4 w-4 transition-transform duration-200" />
