@@ -8,7 +8,8 @@
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "dev": "tsc --watch",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "test": "bun test --watch"
   },
   "devDependencies": {
     "@types/bun": "latest",
