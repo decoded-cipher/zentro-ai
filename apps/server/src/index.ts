@@ -6,7 +6,7 @@ import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
 import { trimTrailingSlash } from 'hono/trailing-slash'
 
-import { clerkAuthMiddleware, authMiddleware } from './middleware'
+// import { clerkAuthMiddleware, authMiddleware } from './middleware'
 import apiRouter from './routes'
 
 const app = new Hono()
@@ -24,6 +24,13 @@ app.use('*', requestId())
 app.use('*', secureHeaders())
 app.use('*', trimTrailingSlash())
 
+// app.use('/api/v1', clerkAuthMiddleware)
+// app.use('/api/v1', authMiddleware)
+
+
+// Routes
+app.route('/api/v1', apiRouter)
+
 
 // Health check endpoint
 app.get('/', (c) => c.json({
@@ -31,12 +38,6 @@ app.get('/', (c) => c.json({
   message: 'API is working properly',
   timestamp: new Date().toISOString(),
 }, 200))
-
-
-// API routes under /api/v1
-app.use('/api/v1', clerkAuthMiddleware)
-app.use('/api/v1', authMiddleware)
-app.route('/api/v1', apiRouter)
 
 
 // 404 Not Found handler
