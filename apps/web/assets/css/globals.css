@@ -54,6 +54,7 @@
 body {
   @apply bg-background text-foreground antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 /* Smooth scrolling */
@@ -326,3 +327,4 @@ html {
     background-position: 0% 100%;
   }
 }
+

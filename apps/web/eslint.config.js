@@ -1,4 +1,9 @@
-import { nextJsConfig } from "@repo/eslint-config/next-js";
+import { config } from "@repo/eslint-config/base";
 
 /** @type {import("eslint").Linter.Config[]} */
-export default nextJsConfig;
+export default [
+  ...config,
+  {
+    ignores: [".nuxt/**", ".output/**"],
+  },
+];
