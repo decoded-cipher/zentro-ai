@@ -8,6 +8,27 @@
       "when": 1763886568751,
       "tag": "0000_cheerful_yellow_claw",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763936699610,
+      "tag": "0001_eager_unicorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763940148063,
+      "tag": "0002_faulty_forge",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763943262359,
+      "tag": "0003_melted_the_hand",
+      "breakpoints": true
     }
   ]
 }
