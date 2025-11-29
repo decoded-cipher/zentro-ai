@@ -45,13 +45,13 @@ export const Logo = React.forwardRef<HTMLDivElement, LogoProps>(
       >
         {isDark ? (
           <img
-            src="/logo_white.png"
+            src="/logo-white.png"
             alt="Zentro AI Logo"
             className="h-full w-full object-contain object-left"
           />
         ) : (
           <img
-            src="/logo_black.png"
+            src="/logo-black.png"
             alt="Zentro AI Logo"
             className="h-full w-full object-contain object-left"
           />

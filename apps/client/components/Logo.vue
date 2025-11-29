@@ -3,7 +3,7 @@
     <ClientOnly>
       <img :src="logoSrc" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
       <template #fallback>
-        <img src="/logo_black.png" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
+        <img src="/logo-black.png" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
       </template>
     </ClientOnly>
   </component>
@@ -29,7 +29,7 @@ const containerClass = computed(() => `h-9 w-auto min-w-[100px] flex-shrink-0 ${
 const logoSrc = computed(() => {
   const isDark = theme.value === 'dark' || 
     (theme.value === 'system' && process.client && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  return isDark ? '/logo_white.png' : '/logo_black.png'
+  return isDark ? '/logo-white.png' : '/logo-black.png'
 })
 </script>
 
