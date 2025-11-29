@@ -1,11 +1,16 @@
-import { integer, pgTable, varchar, index } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, index, unique } from "drizzle-orm/pg-core";
 
 export const user = pgTable('user', {
   id: varchar('id').primaryKey(),
   email: varchar('email').notNull(),
-  clerk_id: varchar('clerk_id').notNull()
+  clerk_id: varchar('clerk_id').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull()
 }, (table) => ({
   emailIdx: index('email_idx').on(table.email),
+  clerkIdIdx: index('clerk_id_idx').on(table.clerk_id),
+  emailUnique: unique('email_unique').on(table.email),
+  clerkIdUnique: unique('clerk_id_unique').on(table.clerk_id),
 }));
 
 export const project = pgTable('project', {
