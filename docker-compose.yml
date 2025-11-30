@@ -33,6 +33,25 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+  
   # clickhouse:
   #   image: clickhouse/clickhouse-server:latest
   #   ports:
@@ -91,6 +110,7 @@ services:
 volumes:
   postgres_data:
   rabbitmq_data:
+  redis_data:
   # clickhouse_data:
   # clickhouse_logs:
   # kafka_data:
