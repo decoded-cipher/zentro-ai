@@ -1,12 +1,20 @@
 <template>
-  <component :is="to ? 'NuxtLink' : 'div'" :to="to" :class="containerClass">
+  <NuxtLink v-if="props.to" :to="props.to" :class="containerClass" class="cursor-pointer">
     <ClientOnly>
       <img :src="logoSrc" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
       <template #fallback>
         <img src="/logo-black.png" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
       </template>
     </ClientOnly>
-  </component>
+  </NuxtLink>
+  <div v-else :class="containerClass">
+    <ClientOnly>
+      <img :src="logoSrc" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
+      <template #fallback>
+        <img src="/logo-black.png" alt="Zentro AI Logo" class="h-full w-full object-contain object-left" />
+      </template>
+    </ClientOnly>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -19,7 +27,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   className: '',
-  to: undefined,
+  to: '/',
 })
 
 const { theme } = useTheme()

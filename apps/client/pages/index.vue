@@ -2,6 +2,8 @@
   <div class="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-b from-white/50 via-white to-white/50 dark:from-neutral-900/50 dark:via-neutral-900 dark:to-neutral-900 space-between">
     <AnimatedBackground variant="dots" />
 
+    <Sidebar />
+
     <PageHeader />
 
     <main class="flex flex-col items-center justify-center m-auto p-6 w-full flex-1 z-10">

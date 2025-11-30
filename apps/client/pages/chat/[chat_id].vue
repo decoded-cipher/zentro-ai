@@ -7,6 +7,8 @@
       <div class="absolute bottom-0 left-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_80%,rgba(251,113,133,0.1),transparent_50%)]" />
     </div>
 
+    <Sidebar />
+
     <PageHeader />
 
     <!-- Main workspace -->
@@ -45,20 +47,22 @@
             <!-- Code Editor Tab -->
             <div v-if="activeTab === 'code'" class="absolute inset-0 bg-[#1e1e1e] dark:bg-black">
               <IframePlaceholder
-                src="https://github1s.com"
+                :src="codeServerUrl"
                 title="Code Editor"
                 placeholder-title="Code Editor"
-                placeholder-description="VS Code Server will load here"
+                :placeholder-description="isProjectReady ? 'VS Code Server' : 'Provisioning VS Code Server...'"
+                :show-overlay="!isProjectReady"
               />
             </div>
 
             <!-- Preview Tab -->
             <div v-if="activeTab === 'preview'" class="absolute inset-0 bg-white dark:bg-neutral-950">
               <IframePlaceholder
-                src="https://example.com"
+                :src="previewUrl"
                 title="Preview"
                 placeholder-title="Live Preview"
-                placeholder-description="Your application preview will appear here"
+                :placeholder-description="isProjectReady ? 'Your application preview' : 'Waiting for project to be ready...'"
+                :show-overlay="!isProjectReady"
               >
                 <template #icon>
                   <svg
@@ -88,7 +92,7 @@
       </main>
 
       <!-- Right panel - Chat -->
-      <aside class="w-[400px] flex flex-col bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+      <aside class="w-[350px] flex flex-col bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
         <!-- Messages -->
         <div class="flex-1 overflow-y-auto px-6 py-4 space-y-5 custom-scrollbar">
           <div v-if="isLoadingChat" class="flex items-center justify-center h-full">
@@ -227,24 +231,34 @@
 
         <!-- Input -->
         <div class="px-6 py-4 border-t border-neutral-200/80 dark:border-neutral-800/80 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-xl">
+          <!-- Status indicator when not ready -->
+          <div v-if="!isProjectReady" class="mb-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
+              <span class="text-sm text-orange-700 dark:text-orange-300">
+                Setting up your workspace...
+              </span>
+            </div>
+          </div>
+          
           <form @submit.prevent="handleSendMessage" class="relative">
             <div class="relative group">
               <div class="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur-md transition-opacity duration-300" />
-              <div class="relative bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl transition-all duration-300 group-focus-within:border-orange-400 dark:group-focus-within:border-orange-500 group-focus-within:shadow-lg group-focus-within:shadow-orange-500/10">
+              <div :class="['relative bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl transition-all duration-300', isProjectReady ? 'group-focus-within:border-orange-400 dark:group-focus-within:border-orange-500 group-focus-within:shadow-lg group-focus-within:shadow-orange-500/10' : 'opacity-60']">
                 <div :class="`flex gap-2 p-3 ${isMaxHeight ? 'items-end' : 'items-center'}`">
                   <textarea
                     ref="textareaRef"
                     v-model="input"
                     @keydown="handleKeyDown"
-                    placeholder="Type your message..."
-                    :disabled="isLoading"
+                    :placeholder="isProjectReady ? 'Type your message...' : 'Waiting for workspace to be ready...'"
+                    :disabled="isLoading || !isProjectReady"
                     rows="1"
                     class="flex-1 bg-transparent border-none outline-none text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:ring-0 resize-none overflow-hidden min-h-[20px] leading-5"
                     :style="{ height: textareaHeight }"
                   />
                   <Button
                     type="submit"
-                    :disabled="!input.trim() || isLoading"
+                    :disabled="!input.trim() || isLoading || !isProjectReady"
                     variant="gradient"
                     size="sm"
                     class="flex-shrink-0 rounded-lg w-9 h-9 p-0 flex items-center justify-center disabled:opacity-30 transition-all shadow-md hover:shadow-lg"
@@ -281,6 +295,13 @@ interface Message {
   timestamp: Date
 }
 
+interface ProjectStatus {
+  status: 'pending' | 'ready' | 'error'
+  codeServerHost?: string
+  workerContainerId?: string
+  message?: string
+}
+
 const route = useRoute()
 const chatId = computed(() => route.params.chat_id as string)
 const { apiClient, API_ENDPOINTS } = useApi()
@@ -289,12 +310,19 @@ const messages = ref<Message[]>([])
 const input = ref('')
 const activeTab = ref('code')
 const isLoading = ref(false)
-const isLoadingChat = ref(true)
+const isLoadingChat = ref(false)
 const error = ref<string | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isMaxHeight = ref(false)
 const messagesEndRef = ref<HTMLDivElement | null>(null)
 const textareaHeight = ref('20px')
+
+// Project status polling
+const isProjectReady = ref(false)
+const codeServerUrl = ref('')
+const previewUrl = ref('')
+const workerHost = ref('')
+const statusPollInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
 const tabs = [
   {
@@ -353,6 +381,40 @@ watch(input, () => {
   })
 })
 
+// Poll for project status
+const pollProjectStatus = async () => {
+  if (!chatId.value) {
+    console.log('No chatId, skipping poll')
+    return
+  }
+  
+  console.log('Polling project status for:', chatId.value)
+  
+  try {
+    const response = await apiClient.get<ProjectStatus>(API_ENDPOINTS.projects.status(chatId.value))
+    const data = response.data
+    
+    console.log('Project status response:', data)
+    
+    if (data.status === 'ready' && data.codeServerHost) {
+      isProjectReady.value = true
+      codeServerUrl.value = data.codeServerHost
+      workerHost.value = data.workerContainerId || ''
+      // Preview URL could be derived from code server or a separate service
+      previewUrl.value = data.codeServerHost.replace(':8080', ':3000') // Adjust as needed
+      
+      // Stop polling once ready
+      if (statusPollInterval.value) {
+        clearInterval(statusPollInterval.value)
+        statusPollInterval.value = null
+        console.log('Project ready, stopped polling')
+      }
+    }
+  } catch (err) {
+    console.error('Error polling project status:', err)
+  }
+}
+
 // Scroll to bottom when new messages arrive
 watch([messages, isLoading], () => {
   nextTick(() => {
@@ -360,40 +422,25 @@ watch([messages, isLoading], () => {
   })
 })
 
-// Fetch chat data when component mounts
-onMounted(async () => {
-  if (!chatId.value) return
-
-  try {
-    isLoadingChat.value = true
-    error.value = null
-
-    const response = await apiClient.get(API_ENDPOINTS.chat.getAll(chatId.value))
-    const data = response.data
-
-    if (data.messages && Array.isArray(data.messages)) {
-      messages.value = data.messages.map((msg: any, index: number) => ({
-        id: msg.id || `msg-${chatId.value}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-        role: msg.role || 'user',
-        content: msg.content || '',
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-      }))
-    }
-  } catch (err: any) {
-    console.error('Error fetching chat:', err)
-    error.value =
-      err.response?.data?.message ||
-      err.message ||
-      'Failed to load chat. Please try again.'
-  } finally {
-    isLoadingChat.value = false
+// Start polling when component mounts
+onMounted(() => {
+  console.log('Chat page mounted, chatId:', chatId.value)
+  
+  if (!chatId.value) {
+    console.log('No chatId on mount')
+    return
   }
+
+  // Start polling for project status every 5 seconds
+  console.log('Starting status polling...')
+  pollProjectStatus() // Initial poll
+  statusPollInterval.value = setInterval(pollProjectStatus, 5000)
 })
 
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
-    if (input.value.trim() && !isLoading.value) {
+    if (input.value.trim() && !isLoading.value && isProjectReady.value) {
       handleSendMessage(e as any)
     }
   }
@@ -401,7 +448,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 const handleSendMessage = async (e: Event) => {
   e.preventDefault()
-  if (!input.value.trim() || isLoading.value || !chatId.value) return
+  if (!input.value.trim() || isLoading.value || !chatId.value || !isProjectReady.value) return
 
   const messageContent = input.value.trim()
   input.value = ''
@@ -417,28 +464,32 @@ const handleSendMessage = async (e: Event) => {
   messages.value.push(userMessage)
 
   try {
-    const response = await apiClient.post(API_ENDPOINTS.chats.sendMessage(chatId.value), {
-      content: messageContent,
+    await apiClient.post(API_ENDPOINTS.chat.create(chatId.value), {
+      prompt: messageContent,
     })
-
-    const data = response.data
-
-    if (data.response || data.message || data.content) {
-      const assistantMessage: Message = {
-        id: data.id || `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        role: 'assistant',
-        content: data.response || data.message || data.content || '',
-        timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
-      }
-      messages.value.push(assistantMessage)
-    }
+    
+    // Add a placeholder for assistant response
+    messages.value.push({
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: 'Processing your request...',
+      timestamp: new Date(),
+    })
+    
+    isLoading.value = false
   } catch (error: any) {
     console.error('Error sending message:', error)
     messages.value = messages.value.filter((msg) => msg.id !== userMessage.id)
-  } finally {
     isLoading.value = false
   }
 }
+
+onUnmounted(() => {
+  if (statusPollInterval.value) {
+    clearInterval(statusPollInterval.value)
+    statusPollInterval.value = null
+  }
+});
 
 const formatTime = (date: Date) => {
   return new Intl.DateTimeFormat('en-US', {

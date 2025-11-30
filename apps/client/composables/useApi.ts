@@ -36,10 +36,10 @@ export const useApi = () => {
       create: '/projects',
       getAll: '/projects',
       get: (projectId: string) => `/projects/${projectId}`,
+      status: (projectId: string) => `/projects/${projectId}/status`,
     },
     chat: {
       create: (projectId: string) => `/projects/${projectId}/chat`,
-      getAll: (projectId: string) => `/projects/${projectId}/chat`,
     },
   }
 
