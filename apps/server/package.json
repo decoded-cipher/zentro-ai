@@ -8,10 +8,9 @@
   },
   "dependencies": {
     "@hono/clerk-auth": "^1.0.0",
-    "db": "*",
+    "@repo/db": "*",
     "drizzle-orm": "^0.44.7",
-    "hono": "^4.10.6",
-    "nanoid": "^5.0.0"
+    "hono": "^4.10.6"
   },
   "devDependencies": {
     "wrangler": "^4.4.0"

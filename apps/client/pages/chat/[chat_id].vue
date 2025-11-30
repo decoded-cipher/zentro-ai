@@ -368,7 +368,7 @@ onMounted(async () => {
     isLoadingChat.value = true
     error.value = null
 
-    const response = await apiClient.get(API_ENDPOINTS.chats.get(chatId.value))
+    const response = await apiClient.get(API_ENDPOINTS.chat.getAll(chatId.value))
     const data = response.data
 
     if (data.messages && Array.isArray(data.messages)) {

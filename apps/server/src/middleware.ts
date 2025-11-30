@@ -1,9 +1,7 @@
 
 import { Context, Next } from "hono";
 import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
-import { nanoid } from "nanoid";
-import { db } from "db";
-import { user } from "db";
+import { db, user, withDefaults } from "@repo/db";
 import { eq } from "drizzle-orm";
 
 
@@ -35,15 +33,15 @@ export async function authMiddleware(c: Context, next: Next) {
     if (existingUser.length > 0) {
       dbUserId = existingUser[0].id;
     } else {
-      dbUserId = nanoid();
+      const [newUser] = await db
+        .insert(user)
+        .values(withDefaults({
+          email,
+          clerk_id: clerkUserId
+        }))
+        .returning();
       
-      const newUser = {
-        id: dbUserId,
-        email,
-        clerk_id: clerkUserId
-      };
-
-      await db.insert(user).values(newUser);
+      dbUserId = newUser.id;
     }
 
     c.set("userId", dbUserId);

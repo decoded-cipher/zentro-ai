@@ -146,24 +146,16 @@ const handleSubmit = async (e: Event) => {
   isSubmitting.value = true
 
   try {
-    const response = await apiClient.post(API_ENDPOINTS.chats.create, {
+    const response = await apiClient.post(API_ENDPOINTS.projects.create, {
       prompt: prompt.value.trim(),
     })
 
-    const chatId = response.data.chat_id || response.data.id
+    const projectId = response.data.id
+    console.log('Created project with ID:', projectId)
 
-    if (!chatId) {
-      throw new Error('No chat ID returned from backend')
-    }
-
-    router.push(`/chat/${chatId}`)
+    router.push(`/chat/${projectId}`)
   } catch (error: any) {
-    console.error('Error creating chat:', error)
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      'Failed to create chat'
-    // TODO: Show error message to user
+    console.error('Error creating project:', error)
     isSubmitting.value = false
   }
 }

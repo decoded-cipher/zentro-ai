@@ -1,7 +1,5 @@
 import { Hono } from 'hono'
-import { nanoid } from 'nanoid'
-import { db } from 'db'
-import { project, prompt } from 'db'
+import { db, project, prompt, withDefaults, user } from '@repo/db'
 import { eq } from 'drizzle-orm'
 
 const router = new Hono()
@@ -11,12 +9,9 @@ const router = new Hono()
 // Get all projects
 router.get('/', async (c) => {
   try {
-    const userId = c.get('userId')
-    
     const projects = await db
       .select()
       .from(project)
-      .where(eq(project.userId, userId))
     
     return c.json({ projects })
   } catch (error) {
@@ -29,39 +24,42 @@ router.get('/', async (c) => {
 // Create a new project
 router.post('/', async (c) => {
   try {
-    const userId = c.get('userId')
-    
     const body = await c.req.json()
-    const { name, description } = body
+    const { prompt: promptText } = body
+
+    // TODO: Create name from prompt
+    const name = `Project for ${promptText.slice(0, 20)}...`
+    console.log('Creating project with name:', name)
     
-    if (!name) {
-      return c.json({ error: 'Project name is required' }, 400)
+    const projectData = {
+      name
     }
     
-    const now = Math.floor(Date.now() / 1000)
-    const projectId = `proj_${nanoid()}`
-    
-    const newProject = {
-      id: projectId,
-      userId,
-      name,
-      description: description || null,
-      createdAt: now,
-      updatedAt: now
+    const [insertedProject] = await db
+      .insert(project)
+      .values(withDefaults(projectData))
+      .returning()
+
+    const promptData = {
+      projectId: insertedProject.id,
+      text: promptText
     }
+
+    await db
+      .insert(prompt)
+      .values(withDefaults(promptData))
+      .execute()
     
-    await db.insert(project).values(newProject)
-    
-    return c.json({ project: newProject }, 201)
+    return c.json({ ...insertedProject }, 201)
   } catch (error) {
-    return c.json({ error: 'Failed to create project' }, 500)
+    return c.json({ error: (error as Error).message }, 500)
   }
 })
 
 
 
 // Get all prompts for a project
-router.get('/:projectId/prompts', async (c) => {
+router.get('/:projectId/chat', async (c) => {
   try {
     const projectId = c.req.param('projectId')
     
@@ -73,10 +71,40 @@ router.get('/:projectId/prompts', async (c) => {
       .select()
       .from(prompt)
       .where(eq(prompt.projectId, projectId))
+      .orderBy(prompt.createdAt)
     
     return c.json({ prompts })
   } catch (error) {
     return c.json({ error: 'Failed to fetch prompts' }, 500)
+  }
+})
+
+
+
+// Create a new prompt for a project
+router.post('/:projectId/chat', async (c) => {
+  try {
+    const projectId = c.req.param('projectId')
+    const body = await c.req.json()
+    const { prompt: promptText } = body
+
+    if (!projectId) {
+      return c.json({ error: 'Project ID is required' }, 400)
+    }
+
+    const promptData = {
+      projectId,
+      text: promptText
+    }
+
+    const [insertedPrompt] = await db
+      .insert(prompt)
+      .values(withDefaults(promptData))
+      .returning()
+    
+    return c.json({ ...insertedPrompt }, 201)
+  } catch (error) {
+    return c.json({ error: (error as Error).message }, 500)
   }
 })
 

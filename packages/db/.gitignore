@@ -45,3 +45,6 @@ build/
 # Local database dumps
 dump/
 dumps/
+
+# Drizzle ORM artifacts
+drizzle

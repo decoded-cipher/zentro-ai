@@ -32,10 +32,14 @@ export const useApi = () => {
   )
 
   const API_ENDPOINTS = {
-    chats: {
-      create: '/chats',
-      get: (chatId: string) => `/chats/${chatId}`,
-      sendMessage: (chatId: string) => `/chats/${chatId}/messages`,
+    projects: {
+      create: '/projects',
+      getAll: '/projects',
+      get: (projectId: string) => `/projects/${projectId}`,
+    },
+    chat: {
+      create: (projectId: string) => `/projects/${projectId}/chat`,
+      getAll: (projectId: string) => `/projects/${projectId}/chat`,
     },
   }
 
