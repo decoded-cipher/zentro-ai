@@ -1,5 +1,9 @@
 {
-  "workbench.colorTheme": "Cursor Dark",
+  "workbench.colorTheme": "cursor-dark",
   "workbench.startupEditor": "none",
-  "security.workspace.trust.enabled": false
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "security.workspace.trust.enabled": false,
+  "chat.disableAIFeatures": true
 }

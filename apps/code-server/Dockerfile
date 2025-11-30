@@ -15,7 +15,6 @@ USER coder
 
 RUN code-server --install-extension cedricverlinden.cursor-dark
 
-# Create settings directory and copy settings
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/settings.json
 
