@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { serve } from '@hono/node-server'
+import dotenv from 'dotenv'
 
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
@@ -9,7 +11,12 @@ import { trimTrailingSlash } from 'hono/trailing-slash'
 // import { clerkAuthMiddleware, authMiddleware } from './middleware'
 import apiRouter from './routes'
 
+// Load environment variables
+dotenv.config()
+
 const app = new Hono()
+
+const PORT = process.env.PORT || 8787
 
 
 
@@ -46,4 +53,12 @@ app.notFound((c) => c.json({
 }, 404))
 
 
-export default app
+// Start the server
+console.log(`🚀 Server starting on http://localhost:${PORT}`)
+
+serve({
+  fetch: app.fetch,
+  port: Number(PORT),
+}, (info) => {
+  console.log(`✅ Server is running on http://localhost:${info.port}`)
+})

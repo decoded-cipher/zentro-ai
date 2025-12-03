@@ -1,0 +1,20 @@
+{
+  "name": "manager",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@repo/queue": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "dockerode": "^3.3.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.19",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

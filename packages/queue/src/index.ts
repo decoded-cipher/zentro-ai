@@ -17,21 +17,49 @@ let channel: Channel | null = null;
 
 // Generate the RabbitMQ connection URL
 function getConnectionUrl(): string {
-    return `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
+    const user = process.env.RABBITMQ_USERNAME || 'rabbitmq';
+    const pass = process.env.RABBITMQ_PASSWORD || 'rabbitmq';
+    const host = process.env.RABBITMQ_HOST || 'localhost';
+    const port = process.env.RABBITMQ_PORT || '5672';
+    const url = `amqp://${user}:${pass}@${host}:${port}`;
+    console.log(`[Queue] Connection URL: amqp://${user}:***@${host}:${port}`);
+    return url;
 }
 
 
 // Get or create a channel
 async function getChannel(): Promise<Channel> {
   if (!connection) {
-    connection = await amqp.connect(getConnectionUrl());
-    connection.on('error', () => { connection = null; });
-    connection.on('close', () => { connection = null; channel = null; });
+    console.log('[Queue] Attempting to connect to RabbitMQ...');
+    try {
+      connection = await amqp.connect(getConnectionUrl());
+      console.log('[Queue] Successfully connected to RabbitMQ');
+      connection.on('error', (err) => { 
+        console.error('[Queue] Connection error:', err);
+        connection = null; 
+      });
+      connection.on('close', () => { 
+        console.log('[Queue] Connection closed');
+        connection = null; 
+        channel = null; 
+      });
+    } catch (err) {
+      console.error('[Queue] Failed to connect to RabbitMQ:', err);
+      throw err;
+    }
   }
   if (!channel) {
+    console.log('[Queue] Creating channel...');
     channel = await connection.createChannel();
-    channel.on('error', () => { channel = null; });
-    channel.on('close', () => { channel = null; });
+    console.log('[Queue] Channel created');
+    channel.on('error', (err) => { 
+      console.error('[Queue] Channel error:', err);
+      channel = null; 
+    });
+    channel.on('close', () => { 
+      console.log('[Queue] Channel closed');
+      channel = null; 
+    });
   }
   return channel;
 }
@@ -43,11 +71,29 @@ export async function publish(
   routingKey: string,
   message: QueueMessage
 ): Promise<boolean> {
-  const ch = await getChannel();
-  await ch.assertExchange(exchange, 'topic', { durable: true });
-  return ch.publish(exchange, routingKey, Buffer.from(JSON.stringify(message)), {
-    persistent: true,
-  });
+  try {
+    const ch = await getChannel();
+    
+    // Enable publisher confirms for reliable delivery
+    await ch.confirmChannel?.();
+    
+    await ch.assertExchange(exchange, 'topic', { durable: true });
+    
+    const result = ch.publish(exchange, routingKey, Buffer.from(JSON.stringify(message)), {
+      persistent: true,
+    });
+    
+    // Wait for channel to drain if buffer is full
+    if (!result) {
+      await new Promise<void>((resolve) => ch.once('drain', resolve));
+    }
+    
+    console.log(`[Queue] Published message to ${exchange}/${routingKey}:`, result);
+    return true;
+  } catch (error) {
+    console.error(`[Queue] Failed to publish message to ${exchange}/${routingKey}:`, error);
+    throw error;
+  }
 }
 
 

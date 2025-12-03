@@ -25,6 +25,7 @@ export const prompt = pgTable('prompt', {
   id: varchar('id').primaryKey(),
   projectId: varchar('project_id').notNull().references(() => project.id),
   text: varchar('text').notNull(),
+  type: varchar('type').notNull().default('USER'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 });

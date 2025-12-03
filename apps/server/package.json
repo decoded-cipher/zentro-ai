@@ -2,17 +2,21 @@
   "name": "zentro-server",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun"
   },
   "dependencies": {
     "@hono/clerk-auth": "^1.0.0",
+    "@hono/node-server": "^1.13.7",
     "@repo/db": "*",
+    "@repo/queue": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "dotenv": "^16.3.1",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.10.6"
   },
   "devDependencies": {
-    "wrangler": "^4.4.0"
+    "@types/bun": "latest"
   }
 }

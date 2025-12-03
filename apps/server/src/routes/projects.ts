@@ -1,19 +1,35 @@
 import { Hono } from 'hono'
 import { db, project, prompt, withDefaults, user } from '@repo/db'
 import { eq } from 'drizzle-orm'
+import { publish } from '@repo/queue'
+import { getProject } from '@repo/redis'
 
 const router = new Hono()
 
 
 
-// Get all projects
+// Get all projects (paginated)
 router.get('/', async (c) => {
   try {
+    const page = parseInt(c.req.query('page') || '1')
+    const limit = parseInt(c.req.query('limit') || '5')
+    const offset = (page - 1) * limit
+
     const projects = await db
       .select()
       .from(project)
+      .limit(limit + 1)
+      .offset(offset)
     
-    return c.json({ projects })
+    const hasMore = projects.length > limit
+    const projectsToReturn = hasMore ? projects.slice(0, limit) : projects
+    
+    return c.json({ 
+      projects: projectsToReturn,
+      hasMore,
+      page,
+      limit
+    })
   } catch (error) {
     return c.json({ error: 'Failed to fetch projects' }, 500)
   }
@@ -50,6 +66,18 @@ router.post('/', async (c) => {
       .values(withDefaults(promptData))
       .execute()
     
+    // Publish to queue for manager to provision resources
+    try {
+        await publish('project_events', 'project.created', {
+            type: 'project.created',
+            data: {
+                projectId: insertedProject.id
+            }
+        });
+    } catch (err) {
+        console.error('Failed to publish project.created message', err);
+    }
+
     return c.json({ ...insertedProject }, 201)
   } catch (error) {
     return c.json({ error: (error as Error).message }, 500)
@@ -58,56 +86,85 @@ router.post('/', async (c) => {
 
 
 
-// Get all prompts for a project
-router.get('/:projectId/chat', async (c) => {
-  try {
+// Get project status and container endpoints from Redis
+router.get('/:projectId/status', async (c) => {
     const projectId = c.req.param('projectId')
     
-    if (!projectId) {
-      return c.json({ error: 'Project ID is required' }, 400)
+    try {
+        const projectData = await getProject(projectId)
+        
+        if (!projectData || Object.keys(projectData).length === 0) {
+            return c.json({
+                status: 'pending',
+                message: 'Project is being provisioned'
+            })
+        }
+        
+        if (projectData.status === 'running') {
+            return c.json({
+                status: 'ready',
+                codeServerHost: `http://localhost:${projectData.codeServerPort}`,
+                workerContainerId: projectData.workerContainerId,
+                message: 'Project is ready'
+            })
+        }
+        
+        return c.json({
+            status: projectData.status || 'pending',
+            message: 'Project is being provisioned'
+        })
+    } catch (error) {
+        console.error('Error fetching project status:', error)
+        return c.json({ error: 'Failed to fetch project status' }, 500)
     }
-    
-    const prompts = await db
-      .select()
-      .from(prompt)
-      .where(eq(prompt.projectId, projectId))
-      .orderBy(prompt.createdAt)
-    
-    return c.json({ prompts })
-  } catch (error) {
-    return c.json({ error: 'Failed to fetch prompts' }, 500)
-  }
 })
 
 
-
-// Create a new prompt for a project
+// Send a chat message to the project
 router.post('/:projectId/chat', async (c) => {
-  try {
     const projectId = c.req.param('projectId')
     const body = await c.req.json()
     const { prompt: promptText } = body
-
-    if (!projectId) {
-      return c.json({ error: 'Project ID is required' }, 400)
-    }
-
-    const promptData = {
-      projectId,
-      text: promptText
-    }
-
-    const [insertedPrompt] = await db
-      .insert(prompt)
-      .values(withDefaults(promptData))
-      .returning()
     
-    return c.json({ ...insertedPrompt }, 201)
-  } catch (error) {
-    return c.json({ error: (error as Error).message }, 500)
-  }
+    if (!projectId) {
+        return c.json({ error: 'Project ID is required' }, 400)
+    }
+    
+    if (!promptText) {
+        return c.json({ error: 'Prompt is required' }, 400)
+    }
+    
+    try {
+        // Save the prompt to the database
+        const promptData = {
+            projectId,
+            text: promptText,
+            type: 'USER'
+        }
+        
+        const [insertedPrompt] = await db
+            .insert(prompt)
+            .values(withDefaults(promptData))
+            .returning()
+        
+        // Publish to queue for worker to process
+        try {
+            await publish('chat_events', 'chat.message', {
+                type: 'chat.message',
+                data: {
+                    projectId,
+                    promptId: insertedPrompt.id,
+                    prompt: promptText
+                }
+            })
+        } catch (err) {
+            console.error('Failed to publish chat message to queue', err)
+        }
+        
+        return c.json({ ...insertedPrompt }, 201)
+    } catch (error) {
+        return c.json({ error: (error as Error).message }, 500)
+    }
 })
-
-
 
 export default router
