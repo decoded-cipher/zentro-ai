@@ -43,7 +43,8 @@ async function provisionProject(projectId: string) {
                 `PROJECT_ID=${projectId}`,
                 `REDIS_URL=redis://redis:6379`,
                 `DATABASE_URL=postgres://postgres:postgres@postgres:5432/zentro`,
-                `RABBITMQ_HOST=rabbitmq`
+                `RABBITMQ_HOST=rabbitmq`,
+                `GEMINI_API_KEY=${process.env.GEMINI_API_KEY}`
             ],
             portBindings: { '9091/tcp': [{ HostPort: '0' }] },
             binds: [`${projectPath}:/tmp/zentro`]

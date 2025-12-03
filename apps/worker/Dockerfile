@@ -9,6 +9,7 @@ COPY bun.lockb .
 # Copy workspace packages
 COPY packages/queue packages/queue
 COPY packages/redis packages/redis
+COPY packages/db packages/db
 
 # Copy worker app
 COPY apps/worker apps/worker
@@ -18,4 +19,6 @@ RUN bun install
 
 WORKDIR /app/apps/worker
 
-CMD ["bun", "run", "./index.ts"]
+EXPOSE 9091
+
+CMD ["bun", "run", "start"]
