@@ -1,23 +1,24 @@
 {
   "name": "worker",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run --watch index.ts",
-    "start": "bun run index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@google/genai": "^1.31.0",
     "@repo/db": "workspace:*",
     "@repo/queue": "workspace:*",
     "@repo/redis": "workspace:*",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
     "cors": "^2.8.5",
-    "express": "^5.2.1"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

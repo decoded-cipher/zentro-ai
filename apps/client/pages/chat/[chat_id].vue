@@ -94,7 +94,7 @@
       <!-- Right panel - Chat -->
       <aside class="w-[350px] flex flex-col bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
         <!-- Messages -->
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-5 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
           <div v-if="isLoadingChat" class="flex items-center justify-center h-full">
             <div class="flex flex-col items-center gap-4">
               <div class="w-10 h-10 border-3 border-neutral-200 dark:border-neutral-800 border-t-orange-500 rounded-full animate-spin" />
@@ -163,14 +163,14 @@
               v-for="(message, index) in messages"
               :key="message.id"
               :class="[
-                'flex gap-3 animate-in fade-in-up',
+                'flex gap-2 animate-in fade-in-up',
                 message.role === 'user' ? 'flex-row-reverse' : '',
               ]"
               :style="{ animationDelay: `${index * 0.03}s` }"
             >
               <div
                 :class="[
-                  'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold',
+                  'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
                   message.role === 'user'
                     ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-md shadow-orange-500/30'
                     : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300',
@@ -180,7 +180,7 @@
               </div>
               <div
                 :class="[
-                  'flex-1 max-w-[80%] flex flex-col gap-1',
+                  'flex-1 flex flex-col gap-1',
                   message.role === 'user' ? 'items-end' : 'items-start',
                 ]"
               >
@@ -204,8 +204,8 @@
                 </span>
               </div>
             </div>
-            <div v-if="isLoading" class="flex gap-3 animate-in fade-in">
-              <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300">
+            <div v-if="isLoading" class="flex gap-2 animate-in fade-in">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300">
                 AI
               </div>
               <div class="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-3">
@@ -298,6 +298,7 @@ interface Message {
 interface ProjectStatus {
   status: 'pending' | 'ready' | 'error'
   codeServerHost?: string
+  workerHost?: string
   workerContainerId?: string
   message?: string
 }
@@ -305,6 +306,7 @@ interface ProjectStatus {
 const route = useRoute()
 const chatId = computed(() => route.params.chat_id as string)
 const { apiClient, API_ENDPOINTS } = useApi()
+const { connectToWorker, sendChatMessage, disconnect } = useWorker()
 
 const messages = ref<Message[]>([])
 const input = ref('')
@@ -317,7 +319,6 @@ const isMaxHeight = ref(false)
 const messagesEndRef = ref<HTMLDivElement | null>(null)
 const textareaHeight = ref('20px')
 
-// Project status polling
 const isProjectReady = ref(false)
 const codeServerUrl = ref('')
 const previewUrl = ref('')
@@ -381,37 +382,69 @@ watch(input, () => {
   })
 })
 
-// Poll for project status
-const pollProjectStatus = async () => {
-  if (!chatId.value) {
-    console.log('No chatId, skipping poll')
-    return
+const fetchMessages = async () => {
+  if (!chatId.value) return
+  
+  try {
+    const response = await apiClient.get<{ messages: any[] }>(API_ENDPOINTS.projects.messages(chatId.value))
+    const dbMessages = response.data.messages
+    
+    if (dbMessages && dbMessages.length > 0) {
+        messages.value = dbMessages.map((msg: any) => ({
+        id: msg.id,
+        role: msg.type === 'USER' ? 'user' : 'assistant',
+        content: msg.text,
+        timestamp: new Date(msg.createdAt * 1000),
+        }))
+    }
+  } catch (err) {
+    console.error('Error fetching messages:', err)
   }
-  
-  console.log('Polling project status for:', chatId.value)
-  
+}
+
+const pollProjectStatus = async () => {
+  if (!chatId.value) return
+
   try {
     const response = await apiClient.get<ProjectStatus>(API_ENDPOINTS.projects.status(chatId.value))
     const data = response.data
-    
-    console.log('Project status response:', data)
-    
+
     if (data.status === 'ready' && data.codeServerHost) {
       isProjectReady.value = true
       codeServerUrl.value = data.codeServerHost
-      workerHost.value = data.workerContainerId || ''
-      // Preview URL could be derived from code server or a separate service
-      previewUrl.value = data.codeServerHost.replace(':8080', ':3000') // Adjust as needed
-      
-      // Stop polling once ready
+      workerHost.value = data.workerHost || ''
+      previewUrl.value = data.codeServerHost.replace(':8080', ':3000')
+
       if (statusPollInterval.value) {
         clearInterval(statusPollInterval.value)
         statusPollInterval.value = null
-        console.log('Project ready, stopped polling')
+      }
+
+      if (workerHost.value) {
+        connectToWorker(workerHost.value, chatId.value, handleSSEMessage)
       }
     }
   } catch (err) {
     console.error('Error polling project status:', err)
+  }
+}
+
+const handleSSEMessage = (data: { projectId: string; type: string; content?: string }) => {
+  if (data.type === 'content' && data.content) {
+    let lastMsg = messages.value[messages.value.length - 1]
+    if (!lastMsg || lastMsg.role !== 'assistant') {
+      lastMsg = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      }
+      messages.value.push(lastMsg)
+    }
+    lastMsg.content += data.content
+  } else if (data.type === 'done') {
+    isLoading.value = false
+    fetchMessages()
   }
 }
 
@@ -422,18 +455,11 @@ watch([messages, isLoading], () => {
   })
 })
 
-// Start polling when component mounts
 onMounted(() => {
-  console.log('Chat page mounted, chatId:', chatId.value)
-  
-  if (!chatId.value) {
-    console.log('No chatId on mount')
-    return
-  }
+  if (!chatId.value) return
 
-  // Start polling for project status every 5 seconds
-  console.log('Starting status polling...')
-  pollProjectStatus() // Initial poll
+  fetchMessages()
+  pollProjectStatus()
   statusPollInterval.value = setInterval(pollProjectStatus, 5000)
 })
 
@@ -464,19 +490,13 @@ const handleSendMessage = async (e: Event) => {
   messages.value.push(userMessage)
 
   try {
-    await apiClient.post(API_ENDPOINTS.chat.create(chatId.value), {
-      prompt: messageContent,
-    })
-    
-    // Add a placeholder for assistant response
-    messages.value.push({
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: 'Processing your request...',
-      timestamp: new Date(),
-    })
-    
-    isLoading.value = false
+    if (workerHost.value) {
+      await sendChatMessage(workerHost.value, chatId.value, messageContent)
+    } else {
+      await apiClient.post(API_ENDPOINTS.chat.create(chatId.value), {
+        prompt: messageContent,
+      })
+    }
   } catch (error: any) {
     console.error('Error sending message:', error)
     messages.value = messages.value.filter((msg) => msg.id !== userMessage.id)
@@ -489,7 +509,8 @@ onUnmounted(() => {
     clearInterval(statusPollInterval.value)
     statusPollInterval.value = null
   }
-});
+  disconnect()
+})
 
 const formatTime = (date: Date) => {
   return new Intl.DateTimeFormat('en-US', {
