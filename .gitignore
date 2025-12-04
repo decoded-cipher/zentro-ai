@@ -43,7 +43,3 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
-
-
-# Ignore docs folder in monorepo structure
-/apps/docs
