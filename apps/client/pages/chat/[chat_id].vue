@@ -58,11 +58,11 @@
             <!-- Preview Tab -->
             <div v-if="activeTab === 'preview'" class="absolute inset-0 bg-white dark:bg-neutral-950">
               <IframePlaceholder
-                :src="previewUrl"
+                :src="previewSrc"
                 title="Preview"
                 placeholder-title="Live Preview"
-                :placeholder-description="isProjectReady ? 'Your application preview' : 'Waiting for project to be ready...'"
-                :show-overlay="!isProjectReady"
+                :placeholder-description="previewDescription"
+                :show-overlay="showPreviewOverlay"
               >
                 <template #icon>
                   <svg
@@ -298,6 +298,7 @@ interface Message {
 interface ProjectStatus {
   status: 'pending' | 'ready' | 'error'
   codeServerHost?: string
+  devServerHost?: string | null
   workerHost?: string
   workerContainerId?: string
   message?: string
@@ -324,6 +325,19 @@ const codeServerUrl = ref('')
 const previewUrl = ref('')
 const workerHost = ref('')
 const statusPollInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const isCheckingDevServer = ref(false)
+const isDevServerAvailable = ref(false)
+
+// Computed properties for preview
+const previewSrc = computed(() => isDevServerAvailable.value && previewUrl.value ? previewUrl.value : '')
+const showPreviewOverlay = computed(() => !isProjectReady.value || !previewUrl.value || isCheckingDevServer.value || !isDevServerAvailable.value)
+const previewDescription = computed(() => {
+  if (!isProjectReady.value) return 'Waiting for project to be ready...'
+  if (!previewUrl.value) return 'Dev server not configured'
+  if (isCheckingDevServer.value) return 'Checking dev server...'
+  if (!isDevServerAvailable.value) return 'Dev server not running. Start your dev server in the terminal.'
+  return 'Your application preview'
+})
 
 const tabs = [
   {
@@ -402,6 +416,30 @@ const fetchMessages = async () => {
   }
 }
 
+const checkDevServerAvailability = async (url: string): Promise<boolean> => {
+  if (!url) return false
+  
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
+    
+    await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      cache: 'no-cache'
+    })
+    
+    clearTimeout(timeoutId)
+    return true
+  } catch (err: any) {
+    // Network errors indicate server is not reachable
+    const isNetworkError = err.name === 'AbortError' || 
+                          err.message?.includes('Failed to fetch') || 
+                          err.message?.includes('NetworkError')
+    return !isNetworkError
+  }
+}
+
 const pollProjectStatus = async () => {
   if (!chatId.value) return
 
@@ -413,7 +451,12 @@ const pollProjectStatus = async () => {
       isProjectReady.value = true
       codeServerUrl.value = data.codeServerHost
       workerHost.value = data.workerHost || ''
-      previewUrl.value = data.codeServerHost.replace(':8080', ':3000')
+      
+      const newPreviewUrl = data.devServerHost || ''
+      if (previewUrl.value !== newPreviewUrl) {
+        previewUrl.value = newPreviewUrl
+        isDevServerAvailable.value = false
+      }
 
       if (statusPollInterval.value) {
         clearInterval(statusPollInterval.value)
@@ -453,6 +496,15 @@ watch([messages, isLoading], () => {
   nextTick(() => {
     messagesEndRef.value?.scrollIntoView({ behavior: 'smooth' })
   })
+})
+
+// Check dev server when switching to preview tab
+watch(activeTab, async (tab: string) => {
+  if (tab === 'preview' && previewUrl.value && isProjectReady.value) {
+    isCheckingDevServer.value = true
+    isDevServerAvailable.value = await checkDevServerAvailability(previewUrl.value)
+    isCheckingDevServer.value = false
+  }
 })
 
 onMounted(() => {

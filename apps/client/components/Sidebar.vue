@@ -152,7 +152,6 @@ const isLoading = ref(false)
 const isLoadingMore = ref(false)
 const hasMore = ref(false)
 const currentPage = ref(1)
-const limit = 5
 let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
 const fetchProjects = async (page = 1, append = false) => {
@@ -162,7 +161,7 @@ const fetchProjects = async (page = 1, append = false) => {
     isLoadingMore.value = true
   }
   try {
-    const response = await apiClient.get(`${API_ENDPOINTS.projects.getAll}?page=${page}&limit=${limit}`)
+    const response = await apiClient.get(`${API_ENDPOINTS.projects.getAll}?page=${page}`)
     const newProjects = response.data.projects || []
     if (append) {
       projects.value = [...projects.value, ...newProjects]

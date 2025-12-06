@@ -21,5 +21,6 @@ COPY --chown=coder:coder settings.json /home/coder/.local/share/code-server/User
 WORKDIR /tmp/zentro
 
 EXPOSE 8080
+EXPOSE 5173
 
 CMD ["code-server", "--auth", "none", "--bind-addr", "0.0.0.0:8080", "/tmp/zentro"]

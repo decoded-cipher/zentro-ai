@@ -12,7 +12,7 @@ const router = new Hono()
 router.get('/', async (c) => {
   try {
     const page = parseInt(c.req.query('page') || '1')
-    const limit = parseInt(c.req.query('limit') || '5')
+    const limit = parseInt(c.req.query('limit') || '10')
     const offset = (page - 1) * limit
 
     const projects = await db
@@ -104,6 +104,8 @@ router.get('/:projectId/status', async (c) => {
             return c.json({
                 status: 'ready',
                 codeServerHost: `http://localhost:${projectData.codeServerPort}`,
+                devServerHost: `http://localhost:${projectData.devServerPort}`,
+                workerHost: `http://localhost:${projectData.workerPort}`,
                 workerContainerId: projectData.workerContainerId,
                 message: 'Project is ready'
             })
