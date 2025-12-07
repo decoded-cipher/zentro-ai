@@ -3,7 +3,7 @@ import { consume } from '@repo/queue';
 import { setProject, updateHeartbeat, getAllProjects, deleteProject } from '@repo/redis';
 import dotenv from 'dotenv';
 import { CONFIG } from './config';
-import { ensureNetwork, startContainer, stopAndRemoveContainer } from './docker';
+import { ensureNetwork, startContainer, stopAndRemoveContainer, connectToNetwork } from './docker';
 
 dotenv.config();
 
@@ -11,10 +11,13 @@ dotenv.config();
 
 // Provision a new project
 async function provisionProject(projectId: string) {
-    console.log(`Received project.created for ${projectId}`);
+    console.log(`\n\nReceived project.created for ${projectId}`);
     const projectPath = `/tmp/zentro/projects/${projectId}`;
+    const projectNetwork = `project-${projectId}-net`;
 
     try {
+        // 0. Create Project Network
+        await ensureNetwork(projectNetwork);
 
         // 1. Provision Code Server
         console.log(`Starting code-server for ${projectId}...`);
@@ -24,15 +27,20 @@ async function provisionProject(projectId: string) {
             projectId,
             type: 'code-server',
             env: [`PROJECT_ID=${projectId}`],
-            portBindings: { '8080/tcp': [{ HostPort: '0' }] },
-            binds: [`${projectPath}:/tmp/zentro`]
+            portBindings: { 
+                '8080/tcp': [{ HostPort: '0' }],
+                '5173/tcp': [{ HostPort: '0' }]
+            },
+            binds: [`${projectPath}:/tmp/zentro`],
+            network: projectNetwork
         });
 
-        if (!codeServer.port) throw new Error('Failed to get code-server port');
-        console.log(`Code server started on port ${codeServer.port}`);
+        if (!codeServer.ports['8080/tcp']) throw new Error('Failed to get code-server port');
+        const devServerPort = codeServer.ports['5173/tcp'];
+        console.log(`Code server started on port ${codeServer.ports['8080/tcp']}${devServerPort ? `, dev server port ${devServerPort}` : ''}`);
 
 
-        // 2. Provision Worker
+        // 2. Provision Worker (Infra Network + Project Network)
         console.log(`Starting worker for ${projectId}...`);
         const worker = await startContainer({
             image: CONFIG.IMAGES.WORKER,
@@ -40,24 +48,25 @@ async function provisionProject(projectId: string) {
             projectId,
             type: 'worker',
             env: [
-                `PROJECT_ID=${projectId}`,
-                `REDIS_URL=redis://redis:6379`,
-                `DATABASE_URL=postgres://postgres:postgres@postgres:5432/zentro`,
-                `RABBITMQ_HOST=rabbitmq`,
-                `GEMINI_API_KEY=${process.env.GEMINI_API_KEY}`
+                `PROJECT_ID=${projectId}`
             ],
             portBindings: { '9091/tcp': [{ HostPort: '0' }] },
-            binds: [`${projectPath}:/tmp/zentro`]
+            binds: [`${projectPath}:/tmp/zentro`],
+            network: CONFIG.NETWORK_NAME // Connect to infra network first
         });
 
-        if (!worker.port) throw new Error('Failed to get worker port');
-        console.log(`Worker started for ${projectId} on port ${worker.port}`);
+        if (!worker.ports['9091/tcp']) throw new Error('Failed to get worker port');
+        
+        // Connect worker to project network as well
+        await connectToNetwork(worker.id, projectNetwork);
+        console.log(`Worker started for ${projectId} on port ${worker.ports['9091/tcp']} and connected to ${projectNetwork}`);
 
         
         // 3. Store mapping in Redis
         await setProject(projectId, {
-            codeServerPort: codeServer.port,
-            workerPort: worker.port,
+            codeServerPort: codeServer.ports['8080/tcp'],
+            devServerPort: codeServer.ports['5173/tcp'],
+            workerPort: worker.ports['9091/tcp'],
             codeServerContainerId: codeServer.id,
             workerContainerId: worker.id,
             status: 'running',

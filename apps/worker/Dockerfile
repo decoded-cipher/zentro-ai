@@ -11,7 +11,8 @@ COPY . .
 RUN bun install --no-frozen-lockfile --save-text-lockfile
 RUN bun x turbo prune --scope=worker --docker
 
-# Installer stage
+# ------------ Installer stage ------------
+
 FROM base AS installer
 WORKDIR /app
 
@@ -27,9 +28,9 @@ RUN bun install --production --no-frozen-lockfile
 FROM oven/bun:1-slim AS runner
 WORKDIR /app
 
-# Install rclone
+# Install rclone and cron
 RUN apt-get update && \
-    apt-get install -y rclone && \
+    apt-get install -y rclone cron && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy dependencies
@@ -41,13 +42,18 @@ COPY --from=installer /app/bun.lock ./bun.lock
 COPY --from=pruner /app/out/full/ .
 COPY apps/worker/.env ./apps/worker/.env
 
-# Copy sync script
+# Copy sync script, filter file, and entrypoint
 COPY --from=pruner /app/out/full/apps/worker/sync-r2.sh /usr/local/bin/sync-r2.sh
-RUN chmod +x /usr/local/bin/sync-r2.sh
+COPY --from=pruner /app/out/full/apps/worker/rclone_filters.txt /usr/local/bin/rclone_filters.txt
+COPY --from=pruner /app/out/full/apps/worker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/sync-r2.sh /usr/local/bin/entrypoint.sh
+
+# Create log file for cron
+RUN touch /var/log/rclone-sync.log
 
 WORKDIR /app/apps/worker
 
 EXPOSE 9091
 
-# Start rclone sync in the BG and then start the worker
-CMD ["sh", "-c", "/usr/local/bin/sync-r2.sh & exec bun run start"]
+# Use entrypoint script to setup cron with env vars and start worker
+CMD ["/usr/local/bin/entrypoint.sh"]

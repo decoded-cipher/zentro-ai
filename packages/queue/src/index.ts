@@ -65,6 +65,19 @@ async function getChannel(): Promise<Channel> {
 }
 
 
+// Ensure a queue exists and is bound to an exchange
+export async function ensureQueue(
+  queue: string,
+  exchange: string,
+  routingKey: string
+): Promise<void> {
+  const ch = await getChannel();
+  await ch.assertExchange(exchange, 'topic', { durable: true });
+  await ch.assertQueue(queue, { durable: true });
+  await ch.bindQueue(queue, exchange, routingKey);
+  console.log(`[Queue] Ensured queue ${queue} bound to ${exchange}/${routingKey}`);
+}
+
 // Publish a message to an exchange with a routing key
 export async function publish(
   exchange: string,

@@ -1,0 +1,45 @@
+# Rclone filter file for excluding files and directories from user projects
+# Use '-' prefix to exclude, '+' prefix to include (overrides exclusions)
+
+# Dependencies
+- node_modules/**
+- .pnp
+- .pnp.js
+
+# Build outputs
+- .next/**
+- out/**
+- build/**
+- dist/**
+- .turbo/**
+
+# Package manager lock files
+- package-lock.json
+- yarn.lock
+- pnpm-lock.yaml
+
+# Debug and log files
+- npm-debug.log*
+- yarn-debug.log*
+- yarn-error.log*
+- *.log
+
+# OS files
+- .DS_Store
+- Thumbs.db
+
+# IDE and editor files
+- .vscode/**
+- .idea/**
+- *.swp
+- *.swo
+- *~
+
+# Testing and coverage
+- coverage/**
+- .nyc_output/**
+
+# Cache directories
+- .cache/**
+- .parcel-cache/**
+

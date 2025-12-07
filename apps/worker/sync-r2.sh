@@ -1,24 +1,44 @@
-#!/bin/sh
+#!/bin/bash
 
-# Folder inside the container you’re mounting from the host
-: "${BACKUP_SRC:=/backup}"
+set -e
 
-# Rclone remote target, e.g. R2:my-bucket/prefix
-: "${BACKUP_REMOTE:=}"
+: "${BACKUP_SRC:?BACKUP_SRC environment variable is required}"
+: "${BACKUP_REMOTE:?BACKUP_REMOTE environment variable is required}"
 
-# Interval in seconds
-: "${BACKUP_INTERVAL:=60}"
+log() {
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
+}
 
-if [ -z "$BACKUP_REMOTE" ]; then
-  echo "BACKUP_REMOTE is not set; skipping sync loop."
-  # Still keep the container alive & let worker run
-  exit 0
+log "Starting sync: $BACKUP_SRC -> $BACKUP_REMOTE"
+
+if [ ! -d "$BACKUP_SRC" ]; then
+  log "ERROR: Source directory does not exist: $BACKUP_SRC"
+  exit 1
 fi
 
-echo "Starting R2 sync: $BACKUP_SRC -> $BACKUP_REMOTE every $BACKUP_INTERVAL seconds"
+if ! command -v rclone >/dev/null 2>&1; then
+  log "ERROR: rclone command not found"
+  exit 1
+fi
 
-while true; do
-  echo "[$(date)] Syncing..."
-  rclone sync "$BACKUP_SRC" "$BACKUP_REMOTE" --delete-during
-  sleep "$BACKUP_INTERVAL"
-done
+# Use rclone filter file for exclusion
+if [ -f /usr/local/bin/rclone_filters.txt ]; then
+  log "Using rclone_filters.txt for exclusion rules"
+  set -- --filter-from /usr/local/bin/rclone_filters.txt
+else
+  log "WARNING: rclone_filters.txt not found, syncing all files"
+  set --
+fi
+
+if rclone sync "$BACKUP_SRC" "$BACKUP_REMOTE" \
+  "$@" \
+  --delete-during \
+  --verbose \
+  --stats 1m \
+  --stats-one-line; then
+  log "Sync completed successfully"
+else
+  exit_code=$?
+  log "ERROR: Sync failed with exit code: $exit_code"
+  exit $exit_code
+fi
