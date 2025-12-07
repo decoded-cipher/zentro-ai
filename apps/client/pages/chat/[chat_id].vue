@@ -56,7 +56,7 @@
             </div>
 
             <!-- Preview Tab -->
-            <div v-if="activeTab === 'preview'" class="absolute inset-0 bg-white dark:bg-neutral-950">
+            <div v-if="activeTab === 'preview'" class="absolute inset-0 bg-white dark:bg-neutral-950 m-2 border border-neutral-200/80 dark:border-neutral-800/80 rounded overflow-hidden">
               <IframePlaceholder
                 :src="previewSrc"
                 title="Preview"
