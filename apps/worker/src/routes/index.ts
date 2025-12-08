@@ -1,9 +1,12 @@
+
 import { Router } from 'express';
 import { addClient, removeClient } from '../helpers/sse';
-import { processChat } from '../helpers/processor';
+import { processChat } from '../core/processor';
 
 const router = Router();
 
+
+// SSE endpoint for clients to subscribe to updates
 router.get('/subscribe', (req, res) => {
     const projectId = req.query.projectId as string;
 
@@ -27,6 +30,8 @@ router.get('/subscribe', (req, res) => {
     });
 });
 
+
+// Endpoint to receive chat prompts
 router.post('/chat', (req, res) => {
     const { projectId, prompt } = req.body;
 
@@ -39,5 +44,6 @@ router.post('/chat', (req, res) => {
 
     res.json({ status: 'processing' });
 });
+
 
 export default router;

@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { consume } from '@repo/queue';
+
 import apiRouter from './routes';
-import { processChat } from './helpers/processor';
+import { consume } from '@repo/queue';
+import { processChat } from './core/processor';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/', apiRouter);
+
 
 async function start() {
     const QUEUE_NAME = `chat_queue_${PROJECT_ID}`;

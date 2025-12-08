@@ -28,9 +28,11 @@ RUN bun install --production --no-frozen-lockfile
 FROM oven/bun:1-slim AS runner
 WORKDIR /app
 
-# Install rclone and cron
+# Install rclone, cron, nodejs, and npm
 RUN apt-get update && \
-    apt-get install -y rclone cron && \
+    apt-get install -y rclone cron curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy dependencies
