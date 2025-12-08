@@ -261,74 +261,44 @@ const previewFrame = ref<HTMLElement | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
 const deviceSelectorRef = ref<HTMLElement | null>(null)
 
-// Device dimensions (desktop is 16:9)
-const deviceDimensions = {
-  mobile: { width: 375, height: 812 },
-  tablet: { width: 768, height: 1024 },
-  desktop: { width: 1920, height: 1080 }, // 16:9 aspect ratio
+const createIcon = (paths: string | string[]) => {
+  const pathList = Array.isArray(paths) ? paths : [paths]
+  return () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, 
+    pathList.map(d => h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d }))
+  )
 }
 
-// Device options for dropdown
+// Device options for dropdown with dimensions
 const deviceOptions = [
   {
     value: 'none' as const,
     label: 'None',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4',
-      }),
-    ]),
+    dimensions: null,
+    icon: createIcon('M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4'),
   },
   {
     value: 'mobile' as const,
     label: 'Mobile',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
-      }),
-    ]),
+    dimensions: { width: 375, height: 812 },
+    icon: createIcon('M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z'),
   },
   {
     value: 'tablet' as const,
     label: 'Tablet',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z',
-      }),
-    ]),
+    dimensions: { width: 768, height: 1024 },
+    icon: createIcon('M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z'),
   },
   {
     value: 'desktop' as const,
     label: 'Desktop',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-      }),
-    ]),
+    dimensions: { width: 1920, height: 1080 }, // 16:9 aspect ratio
+    icon: createIcon('M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'),
   },
   {
     value: 'scale-out' as const,
     label: 'Scale Out',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
-      }),
-    ]),
+    dimensions: null,
+    icon: createIcon('M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'),
   },
 ]
 
@@ -345,7 +315,11 @@ const handleDeviceChange = (mode: 'none' | 'mobile' | 'tablet' | 'desktop' | 'sc
 const previewFrameStyle = computed(() => {
   if (props.devicePreviewMode === 'scale-out' || props.devicePreviewMode === 'none') return {}
   
-  const dims = deviceDimensions[props.devicePreviewMode]
+  const selectedDevice = deviceOptions.find(opt => opt.value === props.devicePreviewMode)
+  const dims = selectedDevice?.dimensions
+  
+  if (!dims) return {}
+
   if (!previewContainer.value) {
     return {
       width: `${dims.width}px`,
@@ -393,31 +367,14 @@ const tabs = [
   {
     value: 'code',
     label: 'Code Editor',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
-      }),
-    ]),
+    icon: createIcon('M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'),
   },
   {
     value: 'preview',
     label: 'Preview',
-    icon: () => h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z',
-      }),
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
-      }),
+    icon: createIcon([
+      'M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+      'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
     ]),
   },
 ]
