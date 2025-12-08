@@ -16,12 +16,14 @@
     "@vueuse/core": "^11.1.0",
     "@vueuse/nuxt": "^11.1.0",
     "axios": "^1.13.2",
+    "marked": "^17.0.1",
     "nuxt": "^3.13.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
+    "@types/marked": "^6.0.0",
     "@types/node": "^22.15.3",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",

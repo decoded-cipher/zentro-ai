@@ -45,6 +45,5 @@ yarn-error.log*
 *.pem
 
 
-apps/reference
 r2-wipe
 docs

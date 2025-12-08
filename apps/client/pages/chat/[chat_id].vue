@@ -180,20 +180,45 @@
               </div>
               <div
                 :class="[
-                  'flex-1 flex flex-col gap-1',
+                  'flex-1 flex flex-col gap-2 min-w-0 max-w-full',
                   message.role === 'user' ? 'items-end' : 'items-start',
                 ]"
               >
+                <template v-if="message.role === 'assistant'">
+                  <template v-for="(action, actionIndex) in getParsedMessage(message.content).actions" :key="`action-${actionIndex}`">
+                    <ActionCard
+                      :label="getActionLabel(action)"
+                      :content="action.content"
+                      :file-path="action.attributes?.filePath"
+                      :title="action.attributes?.title"
+                      :is-collapsible="isFileAction(action)"
+                      :default-expanded="!isFileAction(action)"
+                    />
+                  </template>
+                  
+                  <!-- Display remaining text if any (rendered as markdown) -->
+                  <div
+                    v-if="getParsedMessage(message.content).text"
+                    :class="[
+                      'rounded-lg px-3 py-2 text-xs leading-relaxed markdown-content',
+                      'bg-neutral-50 dark:bg-neutral-900/50 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700',
+                    ]"
+                    v-html="renderMarkdown(getParsedMessage(message.content).text)"
+                  />
+                </template>
+                
+                <!-- User messages display normally -->
                 <div
+                  v-else
                   :class="[
-                    'rounded-xl px-4 py-2.5 text-sm leading-relaxed',
-                    message.role === 'user'
-                      ? 'bg-gradient-to-br from-orange-500 via-red-500 to-rose-500 text-white shadow-md shadow-orange-500/20'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700',
+                    'rounded-xl px-3 py-2 text-xs leading-relaxed',
+                    'bg-gradient-to-br from-orange-500 via-red-500 to-rose-500 text-white shadow-md shadow-orange-500/20',
+                    'max-w-[85%] break-words',
                   ]"
                 >
                   {{ message.content }}
                 </div>
+                
                 <span
                   :class="[
                     'text-[10px] text-neutral-400 dark:text-neutral-600 px-1',
@@ -308,6 +333,8 @@ const route = useRoute()
 const chatId = computed(() => route.params.chat_id as string)
 const { apiClient, API_ENDPOINTS } = useApi()
 const { connectToWorker, sendChatMessage, disconnect } = useWorker()
+const { parseMessage } = useMessageParser()
+const { renderMarkdown } = useMarkdown()
 
 const messages = ref<Message[]>([])
 const input = ref('')
@@ -319,6 +346,28 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isMaxHeight = ref(false)
 const messagesEndRef = ref<HTMLDivElement | null>(null)
 const textareaHeight = ref('20px')
+
+// Cache parsed messages to avoid re-parsing on every render
+const parsedMessagesCache = new Map<string, ReturnType<typeof parseMessage>>()
+
+const getParsedMessage = (content: string) => {
+  if (!parsedMessagesCache.has(content)) {
+    parsedMessagesCache.set(content, parseMessage(content))
+  }
+  return parsedMessagesCache.get(content)!
+}
+
+// Helper functions for action parsing
+const getActionLabel = (action: ReturnType<typeof parseMessage>['actions'][0]): string => {
+  const actionType = action.attributes?.type
+  if (actionType === 'file') return 'Creating'
+  if (actionType === 'shell') return 'Running'
+  return action.type === 'artifact' ? 'Creating' : 'Running'
+}
+
+const isFileAction = (action: ReturnType<typeof parseMessage>['actions'][0]): boolean => {
+  return action.attributes?.type === 'file' || action.type === 'artifact'
+}
 
 const isProjectReady = ref(false)
 const codeServerUrl = ref('')
