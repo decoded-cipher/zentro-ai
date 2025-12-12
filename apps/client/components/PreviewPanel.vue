@@ -26,8 +26,37 @@
           </button>
         </div>
         
-        <!-- Device Preview Selector (only visible when preview tab is active) -->
-        <div v-if="activeTab === 'preview'" ref="deviceSelectorRef" class="relative">
+        <div class="flex items-center gap-3">
+          <!-- Download Button (only visible when code editor tab is active) -->
+          <button
+            v-if="activeTab === 'code' && isProjectReady"
+            @click="$emit('download-project')"
+            :disabled="isDownloading"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-neutral-200/80 dark:border-neutral-700/80 rounded text-neutral-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              v-if="!isDownloading"
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            <div
+              v-else
+              class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
+            />
+            <span>{{ isDownloading ? 'Downloading...' : 'Download' }}</span>
+          </button>
+
+          <!-- Device Preview Selector (only visible when preview tab is active) -->
+          <div v-if="activeTab === 'preview'" ref="deviceSelectorRef" class="relative">
           <button
             @click="isDeviceDropdownOpen = !isDeviceDropdownOpen"
             class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-neutral-200/80 dark:border-neutral-700/80 rounded text-neutral-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
@@ -84,6 +113,7 @@
               </button>
             </div>
           </Transition>
+        </div>
         </div>
       </div>
     </div>
@@ -234,6 +264,7 @@ interface Props {
   showPreviewOverlay: boolean
   isProjectReady: boolean
   devicePreviewMode: 'none' | 'mobile' | 'tablet' | 'desktop' | 'scale-out'
+  isDownloading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -241,6 +272,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'tab-change': [tab: string]
   'device-preview-change': [mode: 'none' | 'mobile' | 'tablet' | 'desktop' | 'scale-out']
+  'download-project': []
 }>()
 
 const isDeviceDropdownOpen = ref(false)

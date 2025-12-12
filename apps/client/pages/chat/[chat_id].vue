@@ -23,8 +23,10 @@
           :show-preview-overlay="showPreviewOverlay"
           :is-project-ready="isProjectReady"
           :device-preview-mode="devicePreviewMode"
+          :is-downloading="isDownloading"
           @tab-change="activeTab = $event"
           @device-preview-change="devicePreviewMode = $event"
+          @download-project="handleDownloadProject"
         />
       </main>
 
@@ -92,6 +94,7 @@ const {
 const input = ref('')
 const activeTab = ref('code')
 const devicePreviewMode = ref<DevicePreviewMode>('none')
+const isDownloading = ref(false)
 
 // SSE message handler
 const handleSSEMessage = (data: { projectId: string; type: string; content?: string }) => {
@@ -146,6 +149,49 @@ const handleSendMessage = async () => {
     console.error('Error sending message:', err)
     removeMessage(userMessage.id)
     setLoading(false)
+  }
+}
+
+// Download project handler
+const handleDownloadProject = async () => {
+  if (!chatId.value || !workerHost.value || !isProjectReady.value || isDownloading.value) {
+    console.error('Cannot download: missing projectId, workerHost, project not ready, or already downloading')
+    return
+  }
+
+  isDownloading.value = true
+
+  try {
+    const workerUrl = `${workerHost.value}/download?projectId=${chatId.value}`
+    
+    // Fetch the zip file
+    const response = await fetch(workerUrl, {
+      method: 'GET',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to download project: ${response.statusText}`)
+    }
+
+    // Get the blob
+    const blob = await response.blob()
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `project-${chatId.value}-${Date.now()}.zip`
+    document.body.appendChild(a)
+    a.click()
+    
+    // Cleanup
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  } catch (err: any) {
+    console.error('Error downloading project:', err)
+    alert('Failed to download project. Please try again.')
+  } finally {
+    isDownloading.value = false
   }
 }
 
