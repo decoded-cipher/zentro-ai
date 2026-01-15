@@ -1,0 +1,27 @@
+---
+interface Props {
+  variant?: 'gradient' | 'dots' | 'blur';
+  class?: string;
+}
+
+const { variant = 'dots', class: className = '' } = Astro.props;
+---
+
+{variant === 'blur' && (
+  <div class={`absolute inset-0 overflow-hidden pointer-events-none opacity-30 ${className}`}>
+    <div
+      class="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse-glow"
+      style="animation-delay: 0s"
+    />
+    <div
+      class="absolute bottom-0 left-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse-glow"
+      style="animation-delay: 3s"
+    />
+  </div>
+)}
+
+{variant === 'dots' && (
+  <div
+    class={`absolute inset-0 bg-[linear-gradient(to_right,#80808020_1px,transparent_1px),linear-gradient(to_bottom,#80808020_1px,transparent_1px)] bg-[size:80px_80px] opacity-60 ${className}`}
+  />
+)}

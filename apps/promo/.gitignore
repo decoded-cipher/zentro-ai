@@ -1,0 +1,13 @@
+# Large files
+public/demo-video.mov
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.astro/
+
+# Environment
+.env
+.env.*

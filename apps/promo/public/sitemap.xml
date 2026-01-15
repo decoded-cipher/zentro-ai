@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://zentro.arjunkrishna.dev/</loc>
+    <lastmod>2026-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    
+    <!-- Logo Image -->
+    <image:image>
+      <image:loc>https://zentro.arjunkrishna.dev/logo-black.png</image:loc>
+      <image:title>Zentro AI Logo</image:title>
+      <image:caption>Zentro AI - AI-Powered Website Builder</image:caption>
+    </image:image>
+    
+    <!-- Architecture Diagram Image -->
+    <image:image>
+      <image:loc>https://zentro.arjunkrishna.dev/architecture-diagram.png</image:loc>
+      <image:title>Zentro AI Architecture Diagram</image:title>
+      <image:caption>Microservices architecture with PostgreSQL, ClickHouse, Redis, RabbitMQ, and Kafka</image:caption>
+    </image:image>
+    
+    <!-- OG Image -->
+    <image:image>
+      <image:loc>https://zentro.arjunkrishna.dev/og-image.png</image:loc>
+      <image:title>Zentro AI Open Graph Image</image:title>
+      <image:caption>Build Websites with Just Words - AI-Powered Website Builder</image:caption>
+    </image:image>
+    
+    <!-- Demo Video -->
+    <video:video>
+      <video:thumbnail_loc>https://zentro.arjunkrishna.dev/video-poster.jpg</video:thumbnail_loc>
+      <video:title>Zentro AI Demo - Build Websites with Natural Language</video:title>
+      <video:description>Watch how Zentro AI transforms natural language into fully functional websites with a chat-based interface. See live preview, code editing, and instant deployment in action.</video:description>
+      <video:content_loc>https://zentro.arjunkrishna.dev/demo-video.mov</video:content_loc>
+      <video:duration>180</video:duration>
+      <video:publication_date>2024-01-01T00:00:00+00:00</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:live>no</video:live>
+    </video:video>
+  </url>
+  
+</urlset>
