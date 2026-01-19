@@ -46,4 +46,4 @@ yarn-error.log*
 
 
 r2-wipe
-docs
+docs/*md
