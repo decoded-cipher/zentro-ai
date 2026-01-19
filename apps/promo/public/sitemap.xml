@@ -36,10 +36,10 @@
     
     <!-- Demo Video -->
     <video:video>
-      <video:thumbnail_loc>https://zentro.arjunkrishna.dev/video-poster.jpg</video:thumbnail_loc>
+      <video:thumbnail_loc>https://vumbnail.com/1155934947.jpg</video:thumbnail_loc>
       <video:title>Zentro AI Demo - Build Websites with Natural Language</video:title>
       <video:description>Watch how Zentro AI transforms natural language into fully functional websites with a chat-based interface. See live preview, code editing, and instant deployment in action.</video:description>
-      <video:content_loc>https://zentro.arjunkrishna.dev/demo-video.mov</video:content_loc>
+      <video:player_loc>https://player.vimeo.com/video/1155934947</video:player_loc>
       <video:duration>180</video:duration>
       <video:publication_date>2024-01-01T00:00:00+00:00</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
