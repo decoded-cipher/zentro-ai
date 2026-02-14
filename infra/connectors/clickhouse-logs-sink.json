@@ -1,0 +1,23 @@
+{
+  "name": "clickhouse-logs-sink",
+  "config": {
+    "connector.class": "com.clickhouse.kafka.connect.ClickHouseSinkConnector",
+    "tasks.max": "1",
+    "topics": "logs",
+
+    "hostname": "clickhouse",
+    "port": "8123",
+    "database": "zentro_logs",
+    "table": "logs",
+    "username": "default",
+    "password": "default",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "ssl": "false",
+    "insert.mode": "insert"
+  }
+}
+

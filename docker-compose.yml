@@ -63,71 +63,166 @@ services:
       - redis
     networks:
       - zentro-network
-  
-  # clickhouse:
-  #   image: clickhouse/clickhouse-server:latest
+
+  # zookeeper:
+  #   image: zookeeper:3.9
+  #   platform: linux/arm64
+  #   container_name: zookeeper
   #   ports:
-  #     - "8123:8123"  # HTTP interface
-  #     - "9000:9000"  # Native interface
-  #   environment:
-  #     CLICKHOUSE_DB: zentro_analytics
-  #     CLICKHOUSE_USER: default
-  #     CLICKHOUSE_PASSWORD: ""
-  #   volumes:
-  #     - clickhouse_data:/var/lib/clickhouse
-  #     - clickhouse_logs:/var/log/clickhouse-server
-  #   ulimits:
-  #     nofile:
-  #       soft: 262144
-  #       hard: 262144
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  #     - "2181:2181"
+  #   networks:
+  #     - zentro-network
 
   # kafka:
-  #   image: apache/kafka:latest
+  #   image: wurstmeister/kafka:latest
+  #   container_name: kafka
+  #   depends_on:
+  #     - zookeeper
   #   ports:
   #     - "9092:9092"
-  #     - "9093:9093"
   #   environment:
-  #     # KRaft mode configuration
-  #     KAFKA_NODE_ID: 1
-  #     KAFKA_PROCESS_ROLES: broker,controller
-  #     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-  #     # Listeners
-  #     KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-  #     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-  #     # Log directories
-  #     KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-  #     # Topic configuration
-  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  #     KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-  #     KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-  #     # Cluster configuration
-  #     CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+  #     KAFKA_ADVERTISED_HOST_NAME: kafka
+  #     KAFKA_ADVERTISED_PORT: 9092
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #     KAFKA_CREATE_TOPICS: "zentro-connect-configs:1:1:compact,zentro-connect-offsets:25:1:compact,zentro-connect-status:5:1:compact"
   #   volumes:
-  #     - kafka_data:/tmp/kraft-combined-logs
-  #   healthcheck:
-  #     test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  #     - kafka_data:/kafka
+  #   networks:
+  #     - zentro-network
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # ===== KRaft settings =====
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # ===== Listeners =====
+      # INTERNAL for Docker network, EXTERNAL for host machine access
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://127.0.0.1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      # ===== Storage =====
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # ===== REQUIRED CLUSTER ID =====
+      CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
+
+      # ===== JVM FIX (THIS PREVENTS SIGILL) =====
+      KAFKA_JVM_PERFORMANCE_OPTS: >
+        -XX:+UnlockDiagnosticVMOptions
+        -XX:-UseCRC32Intrinsics
+        -XX:-UseAES
+        -XX:-UseSHA
+        -XX:UseSVE=0
+      
+      # ===== Modern Java 21 GC Logging =====
+      KAFKA_JVM_OPTS: ""
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+      KAFKA_GC_LOG_OPTS: "-Xlog:gc*,gc+heap=info"
+
+      # ===== Topic Creation =====
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - zentro-network
+  
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: kafka:19092
+      KAFKA_KAFKACONNECT_ENABLED: "true"
+      KAFKA_KAFKACONNECT_CLUSTERS_0_NAME: zentro-connect
+      KAFKA_KAFKACONNECT_CLUSTERS_0_URL: http://kafka-connect:8083
+      CONFIG_FILEPATH: /tmp/config.yml
+    volumes:
+      - ./infra/redpanda-console.yml:/tmp/config.yml
+    depends_on:
+      - kafka
+      - kafka-connect
+    networks:
+      - zentro-network
+      
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: zentro_logs
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: "default"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infra/clickhouse-schema.sql:/clickhouse-schema.sql:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zentro-network
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect-base:7.5.0
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+      - clickhouse
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:19092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+      CONNECT_GROUP_ID: "zentro-connect"
+      CONNECT_CONFIG_STORAGE_TOPIC: "zentro-connect-configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "zentro-connect-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "zentro-connect-status"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+    entrypoint: /kafka-connect.sh
+    volumes:
+      - ./infra/connectors/clickhouse-sink:/usr/share/confluent-hub-components/clickhouse-sink
+      - ./infra/kafka-connect.sh:/kafka-connect.sh:ro
+    networks:
+      - zentro-network
 
 volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
-  # clickhouse_data:
-  # clickhouse_logs:
-  # kafka_data:
+  kafka_data:
+  clickhouse_data:
 
 networks:
   zentro-network:
     name: zentro-network
-    driver: bridge
+    external: true

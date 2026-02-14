@@ -1,0 +1,29 @@
+{
+  "name": "@repo/logger",
+  "module": "index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.14.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.51.1",
+    "@opentelemetry/sdk-logs": "^0.51.1",
+    "@opentelemetry/resources": "^1.30.1",
+    "@opentelemetry/semantic-conventions": "^1.38.0",
+    "@opentelemetry/core": "^1.24.0",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+

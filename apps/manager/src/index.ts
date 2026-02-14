@@ -4,10 +4,9 @@ import { setProject, updateHeartbeat, getAllProjects, deleteProject } from '@rep
 import dotenv from 'dotenv';
 import { CONFIG } from './config';
 import { ensureNetwork, startContainer, stopAndRemoveContainer, connectToNetwork } from './docker';
+import { startLogCollection, stopLogCollection, stopAllLogCollections, restoreLogCollections } from './logCollector';
 
 dotenv.config();
-
-
 
 // Provision a new project
 async function provisionProject(projectId: string) {
@@ -39,6 +38,12 @@ async function provisionProject(projectId: string) {
         const devServerPort = codeServer.ports['5173/tcp'];
         console.log(`Code server started on port ${codeServer.ports['8080/tcp']}${devServerPort ? `, dev server port ${devServerPort}` : ''}`);
 
+        // Start log collection for code-server
+        await startLogCollection(
+            codeServer.id, 
+            `code-server-${projectId}`, 
+            projectId
+        );
 
         // 2. Provision Worker (Infra Network + Project Network)
         console.log(`Starting worker for ${projectId}...`);
@@ -60,6 +65,13 @@ async function provisionProject(projectId: string) {
         // Connect worker to project network as well
         await connectToNetwork(worker.id, projectNetwork);
         console.log(`Worker started for ${projectId} on port ${worker.ports['9091/tcp']} and connected to ${projectNetwork}`);
+
+        // Start log collection for worker
+        await startLogCollection(
+            worker.id, 
+            `worker-${projectId}`, 
+            projectId
+        );
 
         
         // 3. Store mapping in Redis
@@ -94,7 +106,17 @@ async function cleanupStaleProjects() {
             const lastHeartbeat = parseInt(project.lastHeartbeat || '0');
             if (now - lastHeartbeat > CONFIG.HEARTBEAT_TIMEOUT) {
                 console.log(`Project ${project.id} timed out. Cleaning up...`);
-                
+
+                // Stop log collection
+                if (project.codeServerContainerId) {
+                    await stopLogCollection(project.codeServerContainerId);
+                }
+
+                if (project.workerContainerId) {
+                    await stopLogCollection(project.workerContainerId);
+                }
+
+                // Stop and remove containers
                 if (project.codeServerContainerId) {
                     await stopAndRemoveContainer(project.codeServerContainerId);
                 }
@@ -103,6 +125,7 @@ async function cleanupStaleProjects() {
                     await stopAndRemoveContainer(project.workerContainerId);
                 }
 
+                // Delete from Redis
                 await deleteProject(project.id);
                 console.log(`Cleanup complete for ${project.id}`);
             }
@@ -119,6 +142,9 @@ async function main() {
     
     await ensureNetwork();
 
+    // Restore log collection for existing containers
+    await restoreLogCollections();
+
     // Listen for project creation events
     await consume('manager_queue', 'project_events', 'project.created', async (msg) => {
         const { projectId } = msg.data as { projectId: string };
@@ -130,15 +156,30 @@ async function main() {
         const { projectId } = msg.data as { projectId: string };
         if (projectId) {
             await updateHeartbeat(projectId);
-            console.log(`Heartbeat received for ${projectId}`);
         }
     });
 
-    // Periodic cleanup task
+    // Periodic cleanup task - DISABLED for development
+    // Uncomment to enable automatic cleanup of stale projects after HEARTBEAT_TIMEOUT (60s)
     // setInterval(cleanupStaleProjects, CONFIG.CHECK_INTERVAL);
+    
+    console.log('Cleanup task is DISABLED. Containers will not be automatically removed.');
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', async () => {
+        console.log('SIGTERM received, shutting down gracefully');
+        await stopAllLogCollections();
+        process.exit(0);
+    });
+
+    process.on('SIGINT', async () => {
+        console.log('SIGINT received, shutting down gracefully');
+        await stopAllLogCollections();
+        process.exit(0);
+    });
 }
 
 main().catch((err) => {
-    console.error('Manager service failed to start:', err);
+    console.error('Manager service failed to start', err);
     process.exit(1);
 });
