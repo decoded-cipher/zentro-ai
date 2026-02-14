@@ -75,7 +75,7 @@
           ]"
           :style="{ animationDelay: `${index * 0.03}s` }"
         >
-          <div
+          <!-- <div
             :class="[
               'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
               message.role === 'user'
@@ -84,7 +84,7 @@
             ]"
           >
             {{ message.role === 'user' ? 'U' : 'AI' }}
-          </div>
+          </div> -->
           <div
             :class="[
               'flex-1 flex flex-col gap-2 min-w-0 max-w-full',
@@ -163,6 +163,56 @@
 
     <!-- Input -->
     <div class="p-4 border-t border-neutral-200/80 dark:border-neutral-800/80 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-xl">
+      <!-- Token usage for this chat -->
+      <div
+        v-if="tokenUsage.totalTokens > 0"
+        class="mb-3 rounded-lg bg-neutral-100/90 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 overflow-hidden"
+      >
+        <div class="px-2.5 py-1.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-[9px] font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400 shrink-0">
+              Tokens
+            </span>
+            <span class="tabular-nums text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              {{ formatTokens(tokenUsage.totalTokens) }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 tabular-nums text-[10px]">
+            <span
+              class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400"
+              title="Input tokens"
+            >
+              <span class="w-1 h-1 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0" />
+              <span class="font-medium">{{ formatTokens(tokenUsage.inputTokens) }}</span>
+              <span class="text-neutral-400 dark:text-neutral-500">in</span>
+            </span>
+            <span
+              class="flex items-center gap-1 text-amber-600 dark:text-amber-400"
+              title="Output tokens"
+            >
+              <span class="w-1 h-1 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" />
+              <span class="font-medium">{{ formatTokens(tokenUsage.outputTokens) }}</span>
+              <span class="text-neutral-400 dark:text-neutral-500">out</span>
+            </span>
+          </div>
+        </div>
+        <div
+          class="h-0.5 flex bg-neutral-200/80 dark:bg-neutral-700/80"
+          role="presentation"
+          aria-hidden="true"
+        >
+          <span
+            v-if="tokenUsage.inputTokens > 0"
+            class="inline-block h-full bg-emerald-500 dark:bg-emerald-500/90 transition-all duration-500 ease-out"
+            :style="{ width: `${inputPct}%` }"
+          />
+          <span
+            v-if="tokenUsage.outputTokens > 0"
+            class="inline-block h-full bg-amber-500 dark:bg-amber-500/90 transition-all duration-500 ease-out"
+            :style="{ width: `${outputPct}%` }"
+          />
+        </div>
+      </div>
       <!-- Status indicator when not ready -->
       <div v-if="!isProjectReady" class="mb-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
         <div class="flex items-center gap-2">
@@ -177,7 +227,7 @@
         <div class="relative group">
           <div class="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur-md transition-opacity duration-300" />
           <div :class="['relative bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl transition-all duration-300', isProjectReady ? 'group-focus-within:border-orange-400 dark:group-focus-within:border-orange-500 group-focus-within:shadow-lg group-focus-within:shadow-orange-500/10' : 'opacity-60']">
-            <div :class="`flex gap-2 p-3 ${isMaxHeight ? 'items-end' : 'items-center'}`">
+            <div class="flex gap-2 p-3 items-end">
               <textarea
                 ref="textareaRef"
                 v-model="input"
@@ -185,7 +235,7 @@
                 :placeholder="isProjectReady ? 'Type your message...' : 'Waiting for workspace to be ready...'"
                 :disabled="isLoading || !isProjectReady"
                 rows="1"
-                class="flex-1 bg-transparent border-none outline-none text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:ring-0 resize-none overflow-hidden min-h-[20px] leading-5"
+                class="flex-1 bg-transparent border-none outline-none text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:ring-0 resize-none overflow-hidden min-h-[72px] leading-5"
                 :style="{ height: textareaHeight }"
               />
               <Button
@@ -219,9 +269,11 @@
 
 <script setup lang="ts">
 import type { Message } from '~/types/chat'
+import type { TokenUsage } from '~/composables/useChatMessages'
 
 interface Props {
   messages: Message[]
+  tokenUsage: TokenUsage
   isLoading: boolean
   isLoadingChat: boolean
   error: string | null
@@ -229,7 +281,9 @@ interface Props {
   input: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  tokenUsage: () => ({ inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+})
 
 const emit = defineEmits<{
   'update:input': [value: string]
@@ -240,9 +294,8 @@ const { parseMessage } = useMessageParser()
 const { renderMarkdown } = useMarkdown()
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const isMaxHeight = ref(false)
 const messagesEndRef = ref<HTMLDivElement | null>(null)
-const textareaHeight = ref('20px')
+const textareaHeight = ref('28px')
 
 // Cache parsed messages to avoid re-parsing on every render
 const parsedMessagesCache = new Map<string, ReturnType<typeof parseMessage>>()
@@ -284,12 +337,10 @@ watch(input, () => {
     if (textarea.scrollHeight <= maxHeight) {
       textarea.style.height = `${textarea.scrollHeight}px`
       textarea.style.overflowY = 'hidden'
-      isMaxHeight.value = false
       textareaHeight.value = `${textarea.scrollHeight}px`
     } else {
       textarea.style.height = `${maxHeight}px`
       textarea.style.overflowY = 'auto'
-      isMaxHeight.value = true
       textareaHeight.value = `${maxHeight}px`
     }
   })
@@ -323,5 +374,21 @@ const formatTime = (date: Date) => {
     hour12: true,
   }).format(date)
 }
+
+const formatTokens = (n: number) => {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)} K`
+  return n.toString()
+}
+
+const inputPct = computed(() => {
+  const t = props.tokenUsage.totalTokens
+  if (!t) return 0
+  return Math.round((props.tokenUsage.inputTokens / t) * 100)
+})
+const outputPct = computed(() => {
+  const t = props.tokenUsage.totalTokens
+  if (!t) return 0
+  return Math.round((props.tokenUsage.outputTokens / t) * 100)
+})
 </script>
 

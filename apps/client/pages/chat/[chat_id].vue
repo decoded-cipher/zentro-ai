@@ -34,6 +34,7 @@
       <aside class="w-[350px]">
         <ChatPanel
           :messages="messages"
+          :token-usage="tokenUsage"
           :is-loading="isLoading"
           :is-loading-chat="isLoadingChat"
           :error="error"
@@ -80,6 +81,7 @@ const {
 const chatMessages = useChatMessages(chatId)
 const { 
   messages, 
+  tokenUsage,
   isLoading,
   isLoadingChat, 
   error,

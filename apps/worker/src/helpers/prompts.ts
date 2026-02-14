@@ -3,10 +3,14 @@ import { stripIndents } from "./utils";
 
 export const BASE_PROMPT = "For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.\n\nBy default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.\n\nUse icons from lucide-react for logos.\n\nUse stock photos from unsplash where appropriate, only valid URLs you know exist. Do not download the images, only link to them in image tags.\n\n";
 
-export const getSystemPrompt = (cwd: string = WORK_DIR) => `
+export const getSystemPrompt = (cwd: string = WORK_DIR, maxOutputTokens?: number) => `
 You are Zentro, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
 
-<system_constraints>
+${maxOutputTokens != null && maxOutputTokens > 0 ? `<response_budget>
+  Your reply is strictly limited to ${maxOutputTokens} output tokens. You MUST finish within this limit—no exceptions. Prioritize: (1) Always close every tag (e.g. \`</zentroArtifact>\`, \`</zentroAction>\`). (2) Prefer a complete, minimal solution over a long one that gets cut off. (3) Be concise; avoid repetition and unnecessary explanation. (4) If the task is large, deliver a working minimal version that fits in the budget.
+</response_budget>
+
+` : ''}<system_constraints>
   You are operating in a Docker container running a Linux-based environment. This is a full Linux system with access to standard system tools and package managers.
 
   The environment includes:

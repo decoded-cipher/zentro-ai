@@ -16,7 +16,7 @@ import { integer, pgTable, varchar, index, unique } from "drizzle-orm/pg-core";
 export const project = pgTable('project', {
   id: varchar('id').primaryKey(),
   // userId: varchar('user_id').notNull().references(() => user.id),
-  name: varchar('name').notNull(),
+  name: varchar('name'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 });
@@ -26,6 +26,7 @@ export const prompt = pgTable('prompt', {
   projectId: varchar('project_id').notNull().references(() => project.id),
   text: varchar('text').notNull(),
   type: varchar('type').notNull().default('USER'),
+  tokens: integer('tokens'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 });

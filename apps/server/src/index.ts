@@ -54,11 +54,11 @@ app.notFound((c) => c.json({
 
 
 // Start the server
-console.log(`🚀 Server starting on http://localhost:${PORT}`)
+console.log(`Server starting on http://localhost:${PORT}`)
 
 serve({
   fetch: app.fetch,
   port: Number(PORT),
 }, (info) => {
-  console.log(`✅ Server is running on http://localhost:${info.port}`)
+  console.log(`Server is running on http://localhost:${info.port}`)
 })

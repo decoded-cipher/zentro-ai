@@ -31,33 +31,6 @@
 
           <!-- Navigation items -->
           <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <!-- Home -->
-            <NuxtLink
-              to="/"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
-              :class="[
-                route.path === '/'
-                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                  : 'text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground'
-              ]"
-            >
-              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span class="truncate">Home</span>
-            </NuxtLink>
-
-            <!-- New Project -->
-            <NuxtLink
-              to="/"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground"
-            >
-              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span class="truncate">New Project</span>
-            </NuxtLink>
-            
             <div class="pt-4 flex flex-col min-h-0">
               <p class="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 px-3 flex-shrink-0">Recent Projects</p>
               <div v-if="isLoading" class="px-3 py-2">
@@ -83,7 +56,7 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
-                    <span class="truncate">{{ project.name }}</span>
+                    <span class="truncate">{{ project.name ?? 'New Project' }}</span>
                   </button>
                   
                   <!-- Load More Button -->
@@ -137,7 +110,7 @@
 <script setup lang="ts">
 interface Project {
   id: string
-  name: string
+  name: string | null
   createdAt: number
   updatedAt: number
 }

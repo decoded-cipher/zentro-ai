@@ -18,7 +18,7 @@ export function parseArtifacts(text: string): ZentroArtifact[] {
   const artifacts: ZentroArtifact[] = [];
   
   // Match <zentroArtifact> tags with attributes
-  const artifactRegex = /<zentroArtifact\s+id="([^"]+)"\s+title="([^"]+)"[^>]*>([\s\S]*?)<\/zentroArtifact>/gi;
+  const artifactRegex = /<zentroArtifact\s+id="([^"]+)"\s+title="([^"]+)"[^>]*>([\s\S]*?)(?:<\/zentroArtifact>|$)/gi;
   
   let match;
   while ((match = artifactRegex.exec(text)) !== null) {

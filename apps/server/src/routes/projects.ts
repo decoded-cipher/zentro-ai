@@ -43,8 +43,7 @@ router.post('/', async (c) => {
     const body = await c.req.json()
     const { prompt: promptText } = body
 
-    const name = 'New Project'
-    const projectData = { name }
+    const projectData = { name: null }
     
     const [insertedProject] = await db
       .insert(project)
