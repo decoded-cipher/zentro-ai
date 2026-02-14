@@ -43,13 +43,8 @@ router.post('/', async (c) => {
     const body = await c.req.json()
     const { prompt: promptText } = body
 
-    // TODO: Create name from prompt
-    const name = `Project for ${promptText.slice(0, 20)}...`
-    console.log('Creating project with name:', name)
-    
-    const projectData = {
-      name
-    }
+    const name = 'New Project'
+    const projectData = { name }
     
     const [insertedProject] = await db
       .insert(project)
