@@ -13,7 +13,8 @@ RUN mkdir -p /tmp/zentro && chown -R coder:coder /tmp/zentro
 
 USER coder
 
-RUN code-server --install-extension cedricverlinden.cursor-dark
+RUN code-server --install-extension cedricverlinden.cursor-dark \
+    && code-server --install-extension astro-build.astro-vscode
 
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/settings.json
