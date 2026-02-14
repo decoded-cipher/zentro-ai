@@ -14,7 +14,13 @@ RUN mkdir -p /tmp/zentro && chown -R coder:coder /tmp/zentro
 USER coder
 
 RUN code-server --install-extension cedricverlinden.cursor-dark \
-    && code-server --install-extension astro-build.astro-vscode
+    && code-server --install-extension astro-build.astro-vscode \
+    && code-server --install-extension ms-python.python \
+    && code-server --install-extension ms-python.debugpy \
+    && code-server --install-extension ms-python.vscode-python-envs \
+    && code-server --install-extension svelte.svelte-vscode \
+    && code-server --install-extension bradlc.vscode-tailwindcss \
+    && code-server --install-extension Vue.volar
 
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/settings.json
