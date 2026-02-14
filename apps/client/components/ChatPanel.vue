@@ -367,12 +367,20 @@ const handleSendMessage = () => {
   emit('send-message')
 }
 
-const formatTime = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(date)
+// Relative time formatting
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+const formatTime = (date: Date | string) => {
+  const d = date instanceof Date ? date : new Date(date)
+  const diffSec = Math.round((Date.now() - d.getTime()) / 1000)
+  const diffMin = Math.round(diffSec / 60)
+  const diffHr = Math.round(diffMin / 60)
+  const diffDay = Math.round(diffHr / 24)
+
+  if (Math.abs(diffSec) < 60) return rtf.format(-diffSec, 'second')
+  if (Math.abs(diffMin) < 60) return rtf.format(-diffMin, 'minute')
+  if (Math.abs(diffHr) < 24) return rtf.format(-diffHr, 'hour')
+  if (Math.abs(diffDay) < 7) return rtf.format(-diffDay, 'day')
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d)
 }
 
 const formatTokens = (n: number) => {
