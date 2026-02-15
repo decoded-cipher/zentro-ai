@@ -44,11 +44,12 @@ COPY --from=installer /app/bun.lock ./bun.lock
 COPY --from=pruner /app/out/full/ .
 COPY apps/worker/.env ./apps/worker/.env
 
-# Copy sync script, filter file, and entrypoint
+# Copy sync script, pull script, filter file, and entrypoint
 COPY --from=pruner /app/out/full/apps/worker/sync-r2.sh /usr/local/bin/sync-r2.sh
+COPY --from=pruner /app/out/full/apps/worker/pull-r2.sh /usr/local/bin/pull-r2.sh
 COPY --from=pruner /app/out/full/apps/worker/rclone_filters.txt /usr/local/bin/rclone_filters.txt
 COPY --from=pruner /app/out/full/apps/worker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/sync-r2.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/sync-r2.sh /usr/local/bin/pull-r2.sh /usr/local/bin/entrypoint.sh
 
 # Create log file for cron
 RUN touch /var/log/rclone-sync.log

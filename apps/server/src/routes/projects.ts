@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
-import { db, project, prompt, withDefaults, user } from '@repo/db'
+import { db, project, prompt, withDefaults } from '@repo/db'
 import { eq, asc, desc } from 'drizzle-orm'
 import { publish, ensureQueue } from '@repo/queue'
-import { getProject } from '@repo/redis'
+import { getProject, tryProvLock } from '@repo/redis'
 
 const router = new Hono()
 
@@ -107,6 +107,43 @@ router.get('/:projectId/messages', async (c) => {
   }
 })
 
+
+
+// Reopen a project
+router.post('/:projectId', async (c) => {
+    const projectId = c.req.param('projectId')
+
+    try {
+        const projectData = await getProject(projectId)
+        if (projectData && Object.keys(projectData).length > 0) {
+            return c.json({ message: 'Project already provisioned' }, 200)
+        }
+
+        const [existingProject] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
+        if (!existingProject) {
+            return c.json({ error: 'Project not found' }, 404)
+        }
+
+        const hasProvisioningLock = await tryProvLock(projectId)
+        if (!hasProvisioningLock) {
+            return c.json({ message: 'Provisioning already in progress' }, 200)
+        }
+
+        await publish('project_events', 'project.created', {
+            type: 'project.created',
+            data: { projectId }
+        })
+        console.log(`Triggered provisioning for opened project ${projectId}`)
+
+        return c.json({ message: 'Provisioning triggered' }, 202)
+    } catch (err) {
+        console.error('Failed to trigger provisioning for opened project', err)
+        return c.json({ error: 'Failed to trigger provisioning' }, 500)
+    }
+})
+
+
+
 // Get project status and container endpoints from Redis
 router.get('/:projectId/status', async (c) => {
     const projectId = c.req.param('projectId')
@@ -141,6 +178,7 @@ router.get('/:projectId/status', async (c) => {
         return c.json({ error: 'Failed to fetch project status' }, 500)
     }
 })
+
 
 
 export default router

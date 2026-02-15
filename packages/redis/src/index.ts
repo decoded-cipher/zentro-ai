@@ -64,3 +64,11 @@ export async function getAllProjects() {
 export async function deleteProject(projectId: string) {
     await getRedisClient().del(`project:${projectId}`);
 }
+
+
+// Lock to prevent multiple instances from provisioning the same project simultaneously
+export async function tryProvLock(projectId: string, ttlSeconds = 120): Promise<boolean> {
+    const key = `provisioning:${projectId}`;
+    const result = await getRedisClient().set(key, '1', 'EX', ttlSeconds, 'NX');
+    return result === 'OK';
+}

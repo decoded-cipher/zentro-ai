@@ -28,6 +28,14 @@ for var in "${RCLONE_R2_VARS[@]}"; do
   eval "export $var"
 done
 
+# Pull assets from Cloudflare R2 into container
+echo "Pulling assets from R2..."
+if [ -x /usr/local/bin/pull-r2.sh ]; then
+  /usr/local/bin/pull-r2.sh || echo "R2 pull skipped (non-fatal)"
+else
+  echo "pull-r2.sh not found, skipping"
+fi
+
 # Export environment variables for cron
 printenv | grep -E '^(BACKUP_|RCLONE_)' >> /etc/environment
 

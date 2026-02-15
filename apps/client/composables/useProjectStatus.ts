@@ -8,6 +8,7 @@ export const useProjectStatus = (chatId: ComputedRef<string>) => {
   const previewUrl = ref('')
   const workerHost = ref('')
   const statusPollInterval = ref<ReturnType<typeof setInterval> | null>(null)
+  const hasTriggeredProvision = ref(false)
 
   const pollStatus = async (): Promise<{ shouldConnect: boolean; workerHost: string | null }> => {
     if (!chatId.value) {
@@ -17,6 +18,11 @@ export const useProjectStatus = (chatId: ComputedRef<string>) => {
     try {
       const response = await apiClient.get<ProjectStatus>(API_ENDPOINTS.projects.status(chatId.value))
       const data = response.data
+
+      if (data.status === 'pending' && !hasTriggeredProvision.value) {
+        hasTriggeredProvision.value = true
+        await apiClient.post(API_ENDPOINTS.projects.provision(chatId.value))
+      }
 
       if (data.status === 'ready' && data.codeServerHost) {
         isProjectReady.value = true
@@ -70,6 +76,7 @@ export const useProjectStatus = (chatId: ComputedRef<string>) => {
     codeServerUrl.value = ''
     previewUrl.value = ''
     workerHost.value = ''
+    hasTriggeredProvision.value = false
     stopPolling()
   }
 
