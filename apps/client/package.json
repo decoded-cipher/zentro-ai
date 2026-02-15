@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/nuxt": "^1.13.2",
+    "@lobehub/icons-static-svg": "^1.79.0",
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@vueuse/core": "^11.1.0",
     "@vueuse/nuxt": "^11.1.0",

@@ -166,7 +166,7 @@
       <!-- Token usage for this chat -->
       <div
         v-if="tokenUsage.totalTokens > 0"
-        class="mb-3 rounded-lg bg-neutral-100/90 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 overflow-hidden"
+        class="mb-3 rounded-md bg-neutral-100/90 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 overflow-hidden"
       >
         <div class="px-2.5 py-1.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-1.5 min-w-0">
@@ -226,7 +226,18 @@
       <form @submit.prevent="handleSendMessage" class="relative">
         <div class="relative group">
           <div class="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur-md transition-opacity duration-300" />
-          <div :class="['relative bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl transition-all duration-300', isProjectReady ? 'group-focus-within:border-orange-400 dark:group-focus-within:border-orange-500 group-focus-within:shadow-lg group-focus-within:shadow-orange-500/10' : 'opacity-60']">
+          <div :class="['relative overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl transition-all duration-300', isProjectReady ? 'group-focus-within:border-orange-400 dark:group-focus-within:border-orange-500 group-focus-within:shadow-lg group-focus-within:shadow-orange-500/10' : 'opacity-60']">
+
+            <div v-if="projectId" class="flex items-center gap-2 px-3 py-2 bg-neutral-50/80 dark:bg-neutral-800/40 border-b border-neutral-200/80 dark:border-neutral-700/80">
+              <span class="text-[9px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 shrink-0">Model</span>
+              <ModelPicker
+                :model="model ?? ''"
+                compact
+                :disabled="isLoading || !isProjectReady"
+                @update:model="onModelChange"
+              />
+            </div>
+
             <div class="flex gap-2 p-3 items-end">
               <textarea
                 ref="textareaRef"
@@ -260,6 +271,7 @@
                 </svg>
               </Button>
             </div>
+
           </div>
         </div>
       </form>
@@ -278,17 +290,26 @@ interface Props {
   isLoadingChat: boolean
   error: string | null
   isProjectReady: boolean
+  projectId?: string
+  model?: string | null
   input: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   tokenUsage: () => ({ inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+  projectId: '',
+  model: null,
 })
 
 const emit = defineEmits<{
   'update:input': [value: string]
+  'update:model': [value: string]
   'send-message': []
 }>()
+
+function onModelChange(value: string) {
+  emit('update:model', value)
+}
 
 const { parseMessage } = useMessageParser()
 const { renderMarkdown } = useMarkdown()

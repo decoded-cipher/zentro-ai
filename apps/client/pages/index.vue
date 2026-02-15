@@ -48,9 +48,19 @@
 
         <form @submit.prevent="handleSubmit" class="w-full animate-in fade-in-up">
           <div class="relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-orange-600 via-red-600 to-rose-600 rounded-lg opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 group-focus-within:opacity-30 animate-pulse-glow" />
-            <div class="relative bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm border-2 border-orange-200/60 dark:border-orange-800/60 rounded-lg shadow-lg p-4 transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] focus-within:border-orange-400 dark:focus-within:border-orange-500 focus-within:shadow-orange-500/20">
-              <div :class="`flex gap-3 ${isMaxHeight ? 'items-end justify-end' : 'items-center'}`">
+            <div class="absolute -inset-1 bg-gradient-to-r from-orange-600 via-red-600 to-rose-600 rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 group-focus-within:opacity-30 animate-pulse-glow" />
+            <div class="relative overflow-hidden rounded-2xl border-2 border-orange-200/60 dark:border-orange-800/60 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] focus-within:border-orange-400 dark:focus-within:border-orange-500 focus-within:shadow-orange-500/20">
+              
+              <div class="flex items-center gap-2 px-4 py-3 bg-neutral-50/80 dark:bg-neutral-800/40 border-b border-neutral-200/80 dark:border-neutral-700/80">
+                <span class="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 shrink-0">Model</span>
+                <ModelPicker
+                  :model="selectedModel"
+                  :disabled="isSubmitting"
+                  @update:model="selectedModel = $event"
+                />
+              </div>
+              
+              <div :class="`flex gap-3 px-4 py-4 ${isMaxHeight ? 'items-end' : 'items-center'}`">
                 <textarea
                   ref="textareaRef"
                   v-model="prompt"
@@ -88,6 +98,7 @@
                   </svg>
                 </Button>
               </div>
+
             </div>
           </div>
         </form>
@@ -103,6 +114,7 @@ const router = useRouter()
 const { apiClient, API_ENDPOINTS } = useApi()
 
 const prompt = ref('')
+const selectedModel = ref('')
 const isSubmitting = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isMaxHeight = ref(false)
@@ -150,6 +162,7 @@ const handleSubmit = async (e: Event) => {
   try {
     const response = await apiClient.post(API_ENDPOINTS.projects.create, {
       prompt: prompt.value.trim(),
+      model: selectedModel.value || undefined,
     })
 
     const projectId = response.data.id

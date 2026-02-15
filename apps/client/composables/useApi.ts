@@ -36,6 +36,7 @@ export const useApi = () => {
       create: '/projects',
       getAll: '/projects',
       get: (projectId: string) => `/projects/${projectId}`,
+      update: (projectId: string) => `/projects/${projectId}`,
       status: (projectId: string) => `/projects/${projectId}/status`,
       provision: (projectId: string) => `/projects/${projectId}`,
       messages: (projectId: string) => `/projects/${projectId}/messages`,
@@ -43,6 +44,7 @@ export const useApi = () => {
     chat: {
       create: (projectId: string) => `/projects/${projectId}/chat`,
     },
+    models: '/models',
   }
 
   return {

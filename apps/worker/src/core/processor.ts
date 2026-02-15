@@ -42,7 +42,18 @@ async function generateProjectName(projectId: string, promptText: string) {
 // Processes a chat prompt for a given project
 export async function processChat(projectId: string, promptText: string) {
     try {
-        // 1. Save user prompt
+        
+        // 1. Get model preference
+        const [projectRow] = await db
+            .select({ model: projectTable.model })
+            .from(projectTable)
+            .where(eq(projectTable.id, projectId))
+            .limit(1);
+        
+        const projectModel = projectRow?.model ?? null;
+        const reasoningModel = projectModel || process.env.CLAUDE_REASONING_MODEL! || '';
+
+        // 2. Save user prompt
         const [userPrompt] = await db.insert(promptTable).values(withDefaults({
             projectId,
             text: promptText,
@@ -50,31 +61,31 @@ export async function processChat(projectId: string, promptText: string) {
             tokens: null,
         })).returning();
 
-        // 2. Get conversation history (including the message we just added)
+        // 3. Get conversation history (including the message we just added)
         const allMessages = await db
             .select()
             .from(promptTable)
             .where(eq(promptTable.projectId, projectId))
             .orderBy(asc(promptTable.createdAt));
 
-        // 3. Generate project name
+        // 4. Generate project name
         if (allMessages.length === 1) {
             generateProjectName(projectId, promptText);
         }
 
-        // 4. Convert to Claude format - the API expects an array of message objects
+        // 5. Convert to Claude format - the API expects an array of message objects
         const messages = allMessages.map(msg => ({
             role: msg.type === 'USER' ? 'user' : 'assistant' as const,
             content: msg.text
         }));
 
-        // 5. Add the new user prompt
+        // 6. Add the new user prompt
         const systemPrompt = getSystemPrompt(BASE_WORK_DIR, maxTokens);
         
-        // 6. Call Claude API with streaming
+        // 7. Call Claude API with streaming
         let fullResponse = "";
         const stream = await anthropic.messages.stream({
-            model: process.env.CLAUDE_REASONING_MODEL! || '',
+            model: reasoningModel,
             max_tokens: maxTokens,
             system: systemPrompt,
             messages: messages,
@@ -103,12 +114,12 @@ export async function processChat(projectId: string, promptText: string) {
             }
         }
 
-        // 7. Update user prompt with input tokens
+        // 8. Update user prompt with input tokens
         if (userPrompt?.id && userInputTokens != null) {
             await db.update(promptTable).set({ tokens: userInputTokens, updatedAt: Math.floor(Date.now() / 1000) }).where(eq(promptTable.id, userPrompt.id));
         }
 
-        // 8. Save assistant response
+        // 9. Save assistant response
         await db.insert(promptTable).values(withDefaults({
             projectId,
             text: fullResponse.trim(),
@@ -116,7 +127,7 @@ export async function processChat(projectId: string, promptText: string) {
             tokens: assistantOutputTokens,
         })).execute();
 
-        // 9. Parse and execute artifacts
+        // 10. Parse and execute artifacts
         const artifacts = parseArtifacts(fullResponse);
         
         if (artifacts.length > 0) {
@@ -151,7 +162,7 @@ export async function processChat(projectId: string, promptText: string) {
             }
         }
 
-        // 9. Notify completion
+        // 11. Notify completion
         broadcastToSSE({
             projectId,
             type: 'done'
@@ -165,7 +176,7 @@ export async function processChat(projectId: string, promptText: string) {
             type: 'content'
         });
 
-        // 9. Notify completion
+        // 11. Notify completion
         broadcastToSSE({
             projectId,
             type: 'done'

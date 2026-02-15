@@ -38,13 +38,33 @@ router.get('/', async (c) => {
 
 
 
+// Get a single project
+router.get('/:projectId', async (c) => {
+  try {
+    const projectId = c.req.param('projectId')
+    const [projectRow] = await db
+      .select()
+      .from(project)
+      .where(eq(project.id, projectId))
+      .limit(1)
+
+    if (!projectRow) {
+      return c.json({ error: 'Project not found' }, 404)
+    }
+
+    return c.json(projectRow)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch project' }, 500)
+  }
+})
+
 // Create a new project
 router.post('/', async (c) => {
   try {
     const body = await c.req.json()
-    const { prompt: promptText } = body
+    const { prompt: promptText, model: modelId } = body
 
-    const projectData = { name: null }
+    const projectData = { name: null, model: modelId ?? null }
     
     const [insertedProject] = await db
       .insert(project)
@@ -108,6 +128,37 @@ router.get('/:projectId/messages', async (c) => {
 })
 
 
+
+// Update project (e.g. model)
+router.patch('/:projectId', async (c) => {
+  try {
+    const projectId = c.req.param('projectId')
+    const body = await c.req.json()
+    const { model: modelId } = body
+
+    const [existing] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
+    if (!existing) {
+      return c.json({ error: 'Project not found' }, 404)
+    }
+
+    const updates: Partial<{ name: string | null; model: string | null; updatedAt: number }> = {
+      updatedAt: Math.floor(Date.now() / 1000),
+    }
+    if (modelId !== undefined) {
+      updates.model = modelId || null
+    }
+
+    const [updated] = await db
+      .update(project)
+      .set(updates)
+      .where(eq(project.id, projectId))
+      .returning()
+
+    return c.json(updated)
+  } catch (error) {
+    return c.json({ error: 'Failed to update project' }, 500)
+  }
+})
 
 // Reopen a project
 router.post('/:projectId', async (c) => {

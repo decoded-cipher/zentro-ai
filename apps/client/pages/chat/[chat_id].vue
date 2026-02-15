@@ -39,8 +39,11 @@
           :is-loading-chat="isLoadingChat"
           :error="error"
           :is-project-ready="isProjectReady"
+          :project-id="chatId"
+          :model="projectModel ?? defaultModelId"
           v-model:input="input"
           @send-message="handleSendMessage"
+          @update:model="handleModelChange"
         />
       </aside>
     </div>
@@ -56,6 +59,7 @@ const chatId = computed(() => route.params.chat_id as string)
 // Composables
 const { apiClient, API_ENDPOINTS } = useApi()
 const { connectToWorker, sendChatMessage, disconnect } = useWorker()
+const { defaultModelId } = useModels()
 
 // Project status management
 const projectStatus = useProjectStatus(chatId)
@@ -79,11 +83,11 @@ const {
 
 // Chat messages management
 const chatMessages = useChatMessages(chatId)
-const { 
-  messages, 
+const {
+  messages,
   tokenUsage,
   isLoading,
-  isLoadingChat, 
+  isLoadingChat,
   error,
   fetchMessages,
   addMessage,
@@ -91,6 +95,9 @@ const {
   removeMessage,
   setLoading,
 } = chatMessages
+
+// Project (for model selection)
+const projectModel = ref<string | null>(null)
 
 // Local UI state
 const input = ref('')
@@ -197,11 +204,34 @@ const handleDownloadProject = async () => {
   }
 }
 
+async function fetchProject() {
+  if (!chatId.value) return
+  try {
+    const { data } = await apiClient.get(API_ENDPOINTS.projects.get(chatId.value))
+    projectModel.value = data.model ?? null
+  } catch {
+    // ignore
+  }
+}
+
+async function handleModelChange(newModel: string) {
+  if (!chatId.value) return
+  try {
+    await apiClient.patch(API_ENDPOINTS.projects.update(chatId.value), {
+      model: newModel || null,
+    })
+    projectModel.value = newModel || null
+  } catch (err) {
+    console.error('Failed to update model', err)
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   if (!chatId.value) return
 
   fetchMessages()
+  fetchProject()
   startPolling(initializeWorker)
 })
 
