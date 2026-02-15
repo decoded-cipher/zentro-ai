@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db, project, prompt, withDefaults, user } from '@repo/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, desc } from 'drizzle-orm'
 import { publish, ensureQueue } from '@repo/queue'
 import { getProject } from '@repo/redis'
 
@@ -18,6 +18,7 @@ router.get('/', async (c) => {
     const projects = await db
       .select()
       .from(project)
+      .orderBy(desc(project.updatedAt))
       .limit(limit + 1)
       .offset(offset)
     
