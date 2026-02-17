@@ -10,3 +10,8 @@ dist/
 # Environment
 .env
 .env.*
+.dev.vars
+.wrangler/
+
+# Wrangler config with real values (keep example file public)
+wrangler.jsonc

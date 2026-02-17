@@ -1,0 +1,32 @@
+{
+	"name": "zentro-promo",
+	"compatibility_date": "2025-09-15",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "./dist/_worker.js/index.js",
+	"vars": {
+		"PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAACeuF5msoBcEZ3BG"
+	},
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./dist"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "zentro-waitlist",
+			"database_id": "73e5fb9a-2a83-49b6-879d-60e4a98ec17f"
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"routes": [
+		{
+			"pattern": "zentro.arjunkrishna.dev",
+			"zone_name": "arjunkrishna.dev",
+			"custom_domain": true
+		}
+	]
+}

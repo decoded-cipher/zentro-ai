@@ -1,0 +1,369 @@
+---
+---
+
+<div id="waitlist-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="waitlist-modal-title">
+  <!-- Backdrop -->
+  <div 
+    id="waitlist-modal-backdrop"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Modal -->
+  <div class="relative z-10 w-full max-w-lg transform overflow-hidden rounded-2xl border-2 border-border bg-card shadow-2xl transition-all duration-300 scale-95 opacity-0" id="waitlist-modal-content">
+    <!-- Header -->
+    <div class="relative bg-gradient-to-r from-orange-500/10 via-red-500/10 to-rose-500/10 border-b border-border p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 id="waitlist-modal-title" class="text-2xl font-bold text-foreground">
+            Join the Waitlist
+          </h2>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Get early access when invite spots open up
+          </p>
+        </div>
+        <button
+          id="waitlist-modal-close"
+          type="button"
+          class="ml-4 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Close modal"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="waitlist-form" class="p-6 space-y-4">
+      <!-- Email -->
+      <div>
+        <label for="waitlist-email" class="block text-sm font-medium text-foreground mb-2">
+          Email Address <span class="text-destructive">*</span>
+        </label>
+        <input
+          id="waitlist-email"
+          type="email"
+          name="email"
+          required
+          placeholder="you@example.com"
+          class="w-full px-4 py-3 rounded-lg border-2 border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+          aria-label="Email address"
+          aria-describedby="email-error"
+        />
+        <p id="email-error" class="mt-1 text-sm text-destructive hidden" role="alert"></p>
+      </div>
+
+      <!-- Name -->
+      <div>
+        <label for="waitlist-name" class="block text-sm font-medium text-foreground mb-2">
+          Full Name
+        </label>
+        <input
+          id="waitlist-name"
+          type="text"
+          name="name"
+          placeholder="John Doe"
+          class="w-full px-4 py-3 rounded-lg border-2 border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+          aria-label="Full name"
+        />
+      </div>
+
+      <!-- Company/Organization -->
+      <div>
+        <label for="waitlist-company" class="block text-sm font-medium text-foreground mb-2">
+          Company or Organization
+        </label>
+        <input
+          id="waitlist-company"
+          type="text"
+          name="company"
+          placeholder="Acme Inc."
+          class="w-full px-4 py-3 rounded-lg border-2 border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+          aria-label="Company or organization"
+        />
+      </div>
+
+      <!-- Use Case -->
+      <div>
+        <label for="waitlist-usecase" class="block text-sm font-medium text-foreground mb-2">
+          What new functionality would you like to see in this product?
+        </label>
+        <textarea
+          id="waitlist-usecase"
+          name="usecase"
+          rows="3"
+          placeholder="E.g., AI code generation, real-time preview, deployment automation, database management..."
+          class="w-full px-4 py-3 rounded-lg border-2 border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all resize-none"
+          aria-label="What new functionality would you like to see in this product"
+        ></textarea>
+      </div>
+
+      <!-- Cloudflare Turnstile -->
+      <div class="flex justify-center py-2" id="turnstile-container">
+        <div id="cf-turnstile"></div>
+      </div>
+
+      <!-- Message -->
+      <div id="waitlist-message" class="text-sm empty:hidden" role="status" aria-live="polite"></div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button
+          type="button"
+          id="waitlist-modal-cancel"
+          class="px-6 py-3 rounded-lg font-medium border-2 border-border bg-background text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="waitlist-submit"
+          class="flex-1 px-6 py-3 rounded-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-rose-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+        >
+          Join Waitlist
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  import { actions } from 'astro:actions';
+
+  // Load Cloudflare Turnstile script
+  const turnstileScript = document.createElement('script');
+  turnstileScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+  turnstileScript.async = true;
+  turnstileScript.defer = true;
+  document.head.appendChild(turnstileScript);
+
+  const modal = document.getElementById('waitlist-modal') as HTMLElement;
+  const backdrop = document.getElementById('waitlist-modal-backdrop') as HTMLElement;
+  const closeBtn = document.getElementById('waitlist-modal-close') as HTMLButtonElement;
+  const cancelBtn = document.getElementById('waitlist-modal-cancel') as HTMLButtonElement;
+  const form = document.getElementById('waitlist-form') as HTMLFormElement;
+  const messageEl = document.getElementById('waitlist-message') as HTMLElement;
+  const submitBtn = document.getElementById('waitlist-submit') as HTMLButtonElement;
+  const emailInput = document.getElementById('waitlist-email') as HTMLInputElement;
+  const emailError = document.getElementById('email-error') as HTMLElement;
+
+  let previouslyFocusedElement: HTMLElement | null = null;
+  let turnstileWidgetId: string | null = null;
+
+  function openModal() {
+    previouslyFocusedElement = document.activeElement as HTMLElement;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+      const modalContent = document.getElementById('waitlist-modal-content') as HTMLElement;
+      if (modalContent) {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+      }
+      backdrop.classList.remove('opacity-0');
+      backdrop.classList.add('opacity-100');
+    });
+
+    // Initialize Turnstile when modal opens
+    const siteKey = (window as any).TURNSTILE_SITE_KEY || '';
+    const initTurnstile = () => {
+      const turnstileContainer = document.getElementById('cf-turnstile');
+      if (turnstileContainer && (window as any).turnstile && siteKey) {
+        form.querySelector('input[name="cf-turnstile-response"]')?.remove();
+        turnstileWidgetId = (window as any).turnstile.render(turnstileContainer, {
+          sitekey: siteKey,
+          theme: 'auto',
+          size: 'normal',
+          callback: (token: string) => {
+            const existing = form.querySelector('input[name="cf-turnstile-response"]');
+            if (existing) (existing as HTMLInputElement).value = token;
+            else {
+              const hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = 'cf-turnstile-response';
+              hiddenInput.value = token;
+              form.appendChild(hiddenInput);
+            }
+          },
+        });
+      } else if (!siteKey) {
+        document.getElementById('turnstile-container')?.classList.add('hidden');
+      }
+    };
+    if ((window as any).turnstile) {
+      setTimeout(initTurnstile, 50);
+    } else {
+      turnstileScript.addEventListener('load', () => setTimeout(initTurnstile, 50));
+    }
+
+    // Focus first input
+    emailInput?.focus();
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    const modalContent = document.getElementById('waitlist-modal-content') as HTMLElement;
+    if (modalContent) {
+      modalContent.classList.add('scale-95', 'opacity-0');
+      modalContent.classList.remove('scale-100', 'opacity-100');
+    }
+    backdrop.classList.add('opacity-0');
+    backdrop.classList.remove('opacity-100');
+    
+    // Reset Turnstile
+    if (turnstileWidgetId && (window as any).turnstile) {
+      (window as any).turnstile.reset(turnstileWidgetId);
+      turnstileWidgetId = null;
+    }
+    
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+      
+      // Restore focus
+      previouslyFocusedElement?.focus();
+    }, 300);
+  }
+
+  // Close handlers
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeModal();
+  });
+
+  // Keyboard handlers
+  document.addEventListener('keydown', (e) => {
+    if (modal.classList.contains('hidden')) return;
+    
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+    
+    // Trap focus within modal
+    if (e.key === 'Tab') {
+      const focusableElements = modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    }
+  });
+
+  // Form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Clear previous errors
+    emailError.classList.add('hidden');
+    emailError.textContent = '';
+    messageEl.textContent = '';
+    messageEl.classList.remove('text-green-600', 'text-red-600', 'dark:text-green-400', 'dark:text-red-400');
+
+    // Validate email
+    if (!emailInput?.value || !emailInput.validity.valid) {
+      emailError.textContent = 'Please enter a valid email address';
+      emailError.classList.remove('hidden');
+      emailInput.focus();
+      return;
+    }
+
+    // Validate Turnstile (required when widget is shown)
+    const turnstileContainer = document.getElementById('turnstile-container');
+    const turnstileResponse = form.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
+    const turnstileRequired = turnstileContainer && !turnstileContainer.classList.contains('hidden');
+    if (turnstileRequired && !turnstileResponse?.value?.trim()) {
+      messageEl.textContent = 'Please complete the verification before submitting.';
+      messageEl.classList.add('text-red-600', 'dark:text-red-400');
+      return;
+    }
+
+    const originalText = submitBtn?.textContent ?? 'Join Waitlist';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Joining...';
+    }
+
+    const formData = new FormData(form);
+    const turnstileToken = form.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement;
+    if (turnstileToken?.value) {
+      formData.append('cf-turnstile-response', turnstileToken.value);
+    }
+    const { data, error } = await actions.joinWaitlist(formData);
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+
+    if (error) {
+      const errorMessage = error.message ?? 'Something went wrong. Please try again.';
+      messageEl.textContent = errorMessage;
+      messageEl.classList.add('text-red-600', 'dark:text-red-400');
+      
+      // Show email error if it's an email validation error
+      if (errorMessage.toLowerCase().includes('email')) {
+        emailError.textContent = errorMessage;
+        emailError.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (data?.success) {
+      messageEl.textContent = data.message ?? "You're on the list!";
+      messageEl.classList.add('text-green-600', 'dark:text-green-400');
+      form.reset();
+      
+      // Reset Turnstile
+      if (turnstileWidgetId && (window as any).turnstile) {
+        (window as any).turnstile.reset(turnstileWidgetId);
+      }
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        closeModal();
+      }, 2000);
+    } else {
+      messageEl.textContent = data?.message ?? 'Something went wrong. Please try again.';
+      messageEl.classList.add('text-red-600', 'dark:text-red-400');
+      
+      // Reset Turnstile on error
+      if (turnstileWidgetId && (window as any).turnstile) {
+        (window as any).turnstile.reset(turnstileWidgetId);
+      }
+    }
+  });
+
+  // Export openModal for use by trigger buttons
+  (window as any).openWaitlistModal = openModal;
+</script>
+
+<style>
+  #waitlist-modal {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>

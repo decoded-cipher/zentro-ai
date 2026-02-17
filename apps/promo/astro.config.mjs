@@ -1,17 +1,18 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
+import cloudflare from '@astrojs/cloudflare';
 
 // https://astro.build/config
 export default defineConfig({
   // Site URL for canonical URLs
   site: 'https://zentro.arjunkrishna.dev',
-  
-  integrations: [
-    tailwind(),
-  ],
-  
-  output: 'static',
-  
+
+  integrations: [tailwind()],
+
+  adapter: cloudflare(),
+
+  output: 'server',
+
   // Build optimizations
   build: {
     // Inline stylesheets smaller than this limit
@@ -20,12 +21,6 @@ export default defineConfig({
   
   // Compression and performance
   compressHTML: true,
-  
-  // Prefetch configuration for better UX
-  prefetch: {
-    prefetchAll: true,
-    defaultStrategy: 'viewport',
-  },
   
   // Vite configuration for optimizations
   vite: {
