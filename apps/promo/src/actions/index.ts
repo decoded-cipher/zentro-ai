@@ -58,26 +58,24 @@ export const server = {
         }
       }
 
-      try {
-        // Insert into D1
-        await env.DB.prepare(
-          'INSERT INTO waitlist (email, name, company, usecase, source) VALUES (?, ?, ?, ?, ?)'
-        )
-          .bind(email, name ?? null, company ?? null, usecase ?? null, 'promo')
-          .run();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        if (message.includes('UNIQUE constraint failed')) {
-          return {
-            success: false,
-            message: "You're already on the waitlist! When we're ready and open, you'll be the first to receive an email. Until then, don't worry if you don't hear from us.",
-          };
-        }
-        throw new ActionError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to join waitlist. Please try again.',
-        });
+      const existing = await env.DB.prepare(
+        'SELECT 1 FROM waitlist WHERE email = ? LIMIT 1'
+      )
+        .bind(email)
+        .first();
+
+      if (existing) {
+        return {
+          success: false,
+          message: "You're already on the waitlist! When we're ready and open, you'll be the first to receive an email. Until then, don't worry if you don't hear from us.",
+        };
       }
+
+      await env.DB.prepare(
+        'INSERT INTO waitlist (email, name, company, usecase, source) VALUES (?, ?, ?, ?, ?)'
+      )
+        .bind(email, name ?? null, company ?? null, usecase ?? null, 'promo')
+        .run();
 
       // Send Discord webhook notification
       if (env.DISCORD_WEBHOOK_URL) {
