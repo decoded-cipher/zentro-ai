@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   models: read
+  pull-requests: write
 
 jobs:
   changelog:
@@ -18,7 +19,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate chagelog
-        uses: decoded-cipher/auto-changelog@v1.0.0
+      - name: AI Changelog (GitHub Models)
+        uses: decoded-cipher/auto-changelog@v1.1.0
         with:
           output_path: CHANGELOG.md
+          create_pr: true
+          changelog_branch: auto/changelog
+          base_branch: master
