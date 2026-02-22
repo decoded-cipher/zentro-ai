@@ -78,6 +78,7 @@
           <div class="p-4 border-t border-orange-200/30 dark:border-orange-800/30">
             <!-- Settings -->
             <button
+              @click="openSettings"
               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground"
             >
               <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,6 +101,8 @@
         </div>
       </aside>
     </Transition>
+
+    <SettingsModal v-model:open="isSettingsOpen" />
   </div>
 </template>
 
@@ -125,6 +128,7 @@ const currentPage = ref(1)
 let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isDropdownOpen = ref(false)
+const isSettingsOpen = ref(false)
 
 const fetchProjects = async (page = 1, append = false) => {
   if (page === 1) {
@@ -186,6 +190,11 @@ const togglePin = async (proj: Project, pinned: boolean) => {
     console.error('Failed to toggle pin:', err)
     proj.pinnedAt = previousPinnedAt
   }
+}
+
+const openSettings = () => {
+  closeSidebar(true)
+  isSettingsOpen.value = true
 }
 
 const openProject = (projectId: string) => {
