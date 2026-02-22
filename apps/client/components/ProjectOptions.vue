@@ -1,0 +1,169 @@
+<template>
+  <div
+    v-if="isRenaming"
+    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-900/20"
+  >
+    <svg class="w-5 h-5 flex-shrink-0 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+    <input
+      :ref="(el) => { renameInputRef = el as HTMLInputElement }"
+      v-model="renameValue"
+      @keydown.enter="saveRename"
+      @keydown.escape="cancelRename"
+      @blur="saveRename"
+      class="flex-1 min-w-0 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-foreground/40"
+      placeholder="Project name"
+    />
+  </div>
+  <button
+    v-else
+    @click="emit('select')"
+    class="group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
+    :class="[
+      active
+        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+        : isDropdownOpen
+          ? 'bg-orange-50 dark:bg-orange-900/20 text-foreground'
+          : 'text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground'
+    ]"
+  >
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+    <span class="truncate flex-1">{{ project.name ?? 'New Project' }}</span>
+    <span
+      @click.stop="toggleDropdown($event)"
+      class="p-1.5 -my-1 -mr-1 rounded-md transition-opacity text-foreground/40 hover:text-foreground/70 hover:bg-orange-100/60 dark:hover:bg-orange-900/30"
+      :class="isDropdownOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+    >
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    </span>
+  </button>
+  <Teleport to="body">
+    <Transition name="dropdown">
+      <div
+        v-if="isDropdownOpen"
+        @mousedown.stop
+        class="fixed w-40 p-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 z-[100]"
+        :style="dropdownPosition"
+      >
+        <button
+          @click="startRename"
+          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Rename
+        </button>
+        <button
+          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete
+        </button>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+interface Project {
+  id: string
+  name: string | null
+  createdAt: number
+  updatedAt: number
+}
+
+const props = defineProps<{
+  project: Project
+  active: boolean
+}>()
+
+const emit = defineEmits<{
+  select: []
+  active: [value: boolean]
+}>()
+
+const { apiClient, API_ENDPOINTS } = useApi()
+
+const isDropdownOpen = ref(false)
+const isRenaming = ref(false)
+const renameValue = ref('')
+const renameInputRef = ref<HTMLInputElement | null>(null)
+const dropdownPosition = ref<Record<string, string>>({})
+
+const isActive = computed(() => isDropdownOpen.value || isRenaming.value)
+watch(isActive, (val) => emit('active', val))
+
+const toggleDropdown = (event: MouseEvent) => {
+  if (isDropdownOpen.value) {
+    isDropdownOpen.value = false
+    return
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  dropdownPosition.value = {
+    top: `${rect.top}px`,
+    left: `${rect.right + 6}px`,
+  }
+  isDropdownOpen.value = true
+}
+
+const startRename = () => {
+  isDropdownOpen.value = false
+  isRenaming.value = true
+  renameValue.value = props.project.name ?? ''
+  nextTick(() => {
+    renameInputRef.value?.focus()
+    renameInputRef.value?.select()
+  })
+}
+
+const saveRename = async () => {
+  if (!isRenaming.value) return
+  const trimmed = renameValue.value.trim()
+  const oldName = props.project.name
+  if (trimmed === (oldName ?? '')) { cancelRename(); return }
+
+  props.project.name = trimmed || null
+  isRenaming.value = false
+
+  try {
+    await apiClient.patch(API_ENDPOINTS.projects.update(props.project.id), { name: trimmed || null })
+  } catch (err) {
+    console.error('Failed to rename project:', err)
+    props.project.name = oldName
+  }
+}
+
+const cancelRename = () => {
+  isRenaming.value = false
+  renameValue.value = ''
+}
+
+const handleClickOutside = () => {
+  isDropdownOpen.value = false
+}
+
+onMounted(() => document.addEventListener('mousedown', handleClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
+</script>
+
+<style>
+.dropdown-enter-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.dropdown-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.95);
+}
+</style>
