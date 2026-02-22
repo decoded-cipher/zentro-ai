@@ -11,7 +11,7 @@
       <div
         v-if="isOpen"
         class="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-40"
-        @click="closeSidebar"
+        @click="closeSidebar(true)"
       />
     </Transition>
 
@@ -21,7 +21,7 @@
         v-if="isOpen"
         class="fixed left-0 top-0 h-full w-72 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border-r border-orange-200/50 dark:border-orange-800/50 shadow-2xl z-50"
         @mouseenter="keepOpen"
-        @mouseleave="closeSidebar"
+        @mouseleave="closeSidebar()"
       >
         <div class="flex flex-col h-full">
           <!-- Sidebar header -->
@@ -42,22 +42,75 @@
               </div>
               <template v-else-if="projects.length > 0">
                 <div class="overflow-y-auto max-h-full space-y-1">
-                  <button
+                  <div
                     v-for="project in projects"
                     :key="project.id"
-                    @click="openProject(project.id)"
-                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
-                    :class="[
-                      route.path === `/chat/${project.id}`
-                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        : 'text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground'
-                    ]"
+                    class="group"
                   >
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                    <span class="truncate">{{ project.name ?? 'New Project' }}</span>
-                  </button>
+                    <div
+                      v-if="renamingProjectId === project.id"
+                      class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-900/20"
+                    >
+                      <svg class="w-5 h-5 flex-shrink-0 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      <input
+                        :ref="(el) => { renameInputRef = el as HTMLInputElement }"
+                        v-model="renameValue"
+                        @keydown.enter="saveRename(project.id)"
+                        @keydown.escape="cancelRename"
+                        @blur="saveRename(project.id)"
+                        class="flex-1 min-w-0 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-foreground/40"
+                        placeholder="Project name"
+                      />
+                    </div>
+                    <button
+                      v-else
+                      @click="openProject(project.id)"
+                      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
+                      :class="[
+                        route.path === `/chat/${project.id}`
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                          : activeDropdownId === project.id
+                            ? 'bg-orange-50 dark:bg-orange-900/20 text-foreground'
+                            : 'text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground'
+                      ]"
+                    >
+                      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      <span class="truncate flex-1">{{ project.name ?? 'New Project' }}</span>
+                      <span
+                        @click.stop="toggleDropdown(project.id, $event)"
+                        class="p-1.5 -my-1 -mr-1 rounded-md transition-opacity text-foreground/40 hover:text-foreground/70 hover:bg-orange-100/60 dark:hover:bg-orange-900/30"
+                        :class="activeDropdownId === project.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </span>
+                    </button>
+                    <Teleport to="body">
+                      <Transition name="dropdown">
+                        <div
+                          v-if="activeDropdownId === project.id"
+                          @mousedown.stop
+                          class="fixed w-40 p-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 z-[100]"
+                          :style="dropdownPosition"
+                        >
+                          <button
+                            @click="startRename(project)"
+                            class="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+                          >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Rename
+                          </button>
+                        </div>
+                      </Transition>
+                    </Teleport>
+                  </div>
                   
                   <!-- Load More Button -->
                   <button
@@ -127,6 +180,12 @@ const hasMore = ref(false)
 const currentPage = ref(1)
 let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
+const activeDropdownId = ref<string | null>(null)
+const dropdownPosition = ref<Record<string, string>>({})
+const renamingProjectId = ref<string | null>(null)
+const renameValue = ref('')
+const renameInputRef = ref<HTMLInputElement | null>(null)
+
 const fetchProjects = async (page = 1, append = false) => {
   if (page === 1) {
     isLoading.value = true
@@ -161,8 +220,57 @@ const loadMore = () => {
 }
 
 const openProject = (projectId: string) => {
+  cancelRename()
   closeSidebar()
   router.push(`/chat/${projectId}`)
+}
+
+const toggleDropdown = (projectId: string, event: MouseEvent) => {
+  if (activeDropdownId.value === projectId) {
+    activeDropdownId.value = null
+    return
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  dropdownPosition.value = {
+    top: `${rect.top}px`,
+    left: `${rect.right + 6}px`,
+  }
+  activeDropdownId.value = projectId
+}
+
+const startRename = (project: Project) => {
+  activeDropdownId.value = null
+  renamingProjectId.value = project.id
+  renameValue.value = project.name ?? ''
+  nextTick(() => {
+    renameInputRef.value?.focus()
+    renameInputRef.value?.select()
+  })
+}
+
+const saveRename = async (projectId: string) => {
+  if (renamingProjectId.value !== projectId) return
+  const trimmed = renameValue.value.trim()
+  const proj = projects.value.find(p => p.id === projectId)
+  if (!proj) { cancelRename(); return }
+
+  const oldName = proj.name
+  if (trimmed === (oldName ?? '')) { cancelRename(); return }
+
+  proj.name = trimmed || null
+  renamingProjectId.value = null
+
+  try {
+    await apiClient.patch(API_ENDPOINTS.projects.update(projectId), { name: trimmed || null })
+  } catch (err) {
+    console.error('Failed to rename project:', err)
+    proj.name = oldName
+  }
+}
+
+const cancelRename = () => {
+  renamingProjectId.value = null
+  renameValue.value = ''
 }
 
 const openSidebar = () => {
@@ -180,20 +288,29 @@ const keepOpen = () => {
   }
 }
 
-const closeSidebar = () => {
+const closeSidebar = (force = false) => {
+  if (!force && (activeDropdownId.value || renamingProjectId.value)) return
+  activeDropdownId.value = null
+  cancelRename()
   closeTimeout = setTimeout(() => {
     isOpen.value = false
   }, 150)
 }
 
+const handleClickOutside = () => {
+  activeDropdownId.value = null
+}
+
 onMounted(() => {
   fetchProjects()
+  document.addEventListener('mousedown', handleClickOutside)
 })
 
 onUnmounted(() => {
   if (closeTimeout) {
     clearTimeout(closeTimeout)
   }
+  document.removeEventListener('mousedown', handleClickOutside)
 })
 </script>
 
@@ -218,5 +335,19 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+</style>
+
+<style>
+.dropdown-enter-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.dropdown-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.95);
 }
 </style>
