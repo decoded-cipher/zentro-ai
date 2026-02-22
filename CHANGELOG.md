@@ -1,19 +1,21 @@
-| date       | type      | area     | summary                                                                                           |
-|------------|-----------|----------|---------------------------------------------------------------------------------------------------|
-| 2025-11-22 | feature   | -        | Introduced basic scaffolding for a new project structure using create-turbo package.            |
-| 2025-11-22 | feature   | frontend | Launched a new stable UI for enhanced user interactions.                                         |
-| 2025-11-23 | feature   | db       | Added a database package with Docker Compose for managing PostgreSQL.                            |
-| 2025-11-23 | feature   | -        | Implemented A/B testing framework for comprehensive feature validation.                          |
-| 2025-11-24 | feature   | infra    | Migrated the project to Nuxt.js to improve server-side rendering capabilities.                   |
-| 2025-11-24 | feature   | server   | Integrated Hono framework and Clerk for authentication in the server.                             |
-| 2025-11-28 | improvement| db      | Restructured database schema for better performance and maintainability.                         |
-| 2025-11-30 | feature   | messaging | Integrated RabbitMQ for efficient message queuing and handling within the application.           |
-| 2025-12-01 | feature   | -        | Enabled running Visual Studio Code on a browser for improved accessibility.                      |
-| 2025-12-04 | feature   | worker   | Implemented chat worker with SSE support for real-time message processing.                       |
-| 2025-12-06 | feature   | infra    | Enhanced Docker networking for project management and dynamic chat queues.                       |
-| 2025-12-07 | feature   | -        | Introduced Docker development server with improved project file management capabilities.         |
-| 2025-12-09 | feature   | chat     | Implemented markdown rendering in chats with enhanced UI for better user experience.              |
-| 2026-01-15 | feature   | deployment | Added GitHub Actions workflows to automate the deployment of the promo site.                    |
-| 2026-01-19 | feature   | frontend | Integrated Vimeo Player API for improved video display functionality on the index page.          |
-| 2026-02-15 | feature   | feature  | Enhanced project management capabilities with new waitlist feature and modal integration.        |
-| 2026-02-22 | feature   | frontend | Implemented project archiving and pinning functionalities with UI support for better project management. |
+| date       | type       | area      | summary                                                               |
+|---|---|---|-----------------------------------------------------------------------|
+| 2026-02-22 | feature    | frontend  | Added project archiving functionality with UI integration and backend support.             |
+| 2026-02-22 | feature    | frontend  | Implemented project pinning functionality with UI updates and backend support.               |
+| 2026-02-22 | feature    | frontend  | Integrated ProjectOptions component for project management in the sidebar.                    |
+| 2026-02-22 | feature    | frontend  | Enabled project renaming in the sidebar.                                                      |
+| 2026-02-22 | feature    | frontend  | Enhanced prompts with guidelines for file changes and output completeness.                      |
+| 2026-02-18 | feature    | workflow   | Updated AI Changelog workflow to include pull request permissions and upgrade action version.  |
+| 2026-02-18 | feature    | workflow   | Added AI Changelog workflow for automated changelog generation.                                 |
+| 2026-02-18 | feature    | frontend  | Implemented waitlist feature with modal, server actions, and Cloudflare integration.          |
+| 2026-02-15 | feature    | frontend  | Enhanced model selection and management for projects, including UI components and API integration. |
+| 2026-02-15 | feature    | backend   | Added project re-open functionality and synced assets from R2 back to local.                  |
+| 2026-01-19 | feature    | frontend  | Integrated Vimeo Player API and updated video display in the index page.                       |
+| 2026-01-15 | feature    | infra     | Added GitHub Actions workflow for deploying the promo site.                                     |
+| 2026-01-15 | fix       | infra     | Fixed GitHub Action configuration issues.                                                      |
+| 2025-12-09 | feature    | frontend  | Refactored chat page for better use of reusable components and composables.                    |
+| 2025-12-04 | feature    | infra     | Implemented chat worker with SSE support and message processing.                                 |
+| 2025-12-01 | feature    | infra     | Added Redis and Redis Insights as packages.                                                    |
+| 2025-11-30 | feature    | db        | Updated database schema to enhance overall performance and structure.                           |
+| 2025-11-24 | feature    | frontend  | Migrated to Nuxt.js framework for improved performance and maintainability.                     |
+| 2025-11-22 | feature    | frontend  | Created a new stable user interface for the client web application.                             |
