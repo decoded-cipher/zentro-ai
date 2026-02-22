@@ -52,6 +52,7 @@
                     @select="openProject(project.id)"
                     @active="isDropdownOpen = $event"
                     @pin="(pinned) => togglePin(project, pinned)"
+                    @archive="archiveProject(project)"
                   />
                   
                   <!-- Load More Button -->
@@ -132,7 +133,7 @@ const fetchProjects = async (page = 1, append = false) => {
     isLoadingMore.value = true
   }
   try {
-    const response = await apiClient.get(`${API_ENDPOINTS.projects.getAll}?page=${page}`)
+    const response = await apiClient.get(`${API_ENDPOINTS.projects.getAll}?page=${page}&archived=false`)
     const newProjects = response.data.projects || []
     if (append) {
       projects.value = [...projects.value, ...newProjects]
@@ -155,6 +156,21 @@ const fetchProjects = async (page = 1, append = false) => {
 const loadMore = () => {
   if (!isLoadingMore.value && hasMore.value) {
     fetchProjects(currentPage.value + 1, true)
+  }
+}
+
+const archiveProject = async (proj: Project) => {
+  const archivedAt = Math.floor(Date.now() / 1000)
+  projects.value = projects.value.filter(p => p.id !== proj.id)
+
+  try {
+    await apiClient.patch(API_ENDPOINTS.projects.update(proj.id), { archivedAt })
+    if (route.path === `/chat/${proj.id}`) {
+      router.push('/')
+    }
+  } catch (err) {
+    console.error('Failed to archive project:', err)
+    await fetchProjects()
   }
 }
 

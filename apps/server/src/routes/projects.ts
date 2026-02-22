@@ -13,11 +13,24 @@ router.get('/', async (c) => {
   try {
     const page = parseInt(c.req.query('page') || '1')
     const limit = parseInt(c.req.query('limit') || '10')
+    const archived = c.req.query('archived')
     const offset = (page - 1) * limit
 
-    const projects = await db
+    const archiveFilter = archived === 'true'
+      ? isNotNull(project.archivedAt)
+      : archived === 'false'
+        ? isNull(project.archivedAt)
+        : undefined
+
+    const query = db
       .select()
       .from(project)
+
+    if (archiveFilter) {
+      query.where(archiveFilter)
+    }
+
+    const projects = await query
       .orderBy(
         sql`CASE WHEN ${project.pinnedAt} IS NOT NULL THEN 0 ELSE 1 END`,
         desc(project.pinnedAt),
@@ -138,14 +151,14 @@ router.patch('/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId')
     const body = await c.req.json()
-    const { model: modelId, name: newName, pinnedAt: pinnedAtValue } = body
+    const { model: modelId, name: newName, pinnedAt: pinnedAtValue, archivedAt: archivedAtValue } = body
 
     const [existing] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
     if (!existing) {
       return c.json({ error: 'Project not found' }, 404)
     }
 
-    const updates: Partial<{ name: string | null; model: string | null; pinnedAt: number | null; updatedAt: number }> = {
+    const updates: Partial<{ name: string | null; model: string | null; pinnedAt: number | null; archivedAt: number | null; updatedAt: number }> = {
       updatedAt: Math.floor(Date.now() / 1000),
     }
     if (modelId !== undefined) {
@@ -156,6 +169,9 @@ router.patch('/:projectId', async (c) => {
     }
     if (pinnedAtValue !== undefined) {
       updates.pinnedAt = pinnedAtValue
+    }
+    if (archivedAtValue !== undefined) {
+      updates.archivedAt = archivedAtValue
     }
 
     const [updated] = await db

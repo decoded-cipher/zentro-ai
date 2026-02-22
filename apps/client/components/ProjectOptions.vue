@@ -107,6 +107,7 @@
           {{ pinned ? 'Unpin chat' : 'Pin chat' }}
         </button>
         <button
+          @click="archiveProject"
           class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,6 +149,7 @@ const emit = defineEmits<{
   select: []
   active: [value: boolean]
   pin: [pinned: boolean]
+  archive: []
 }>()
 
 const { apiClient, API_ENDPOINTS } = useApi()
@@ -204,6 +206,11 @@ const saveRename = async () => {
 const togglePin = () => {
   isDropdownOpen.value = false
   emit('pin', !props.pinned)
+}
+
+const archiveProject = () => {
+  isDropdownOpen.value = false
+  emit('archive')
 }
 
 const cancelRename = () => {

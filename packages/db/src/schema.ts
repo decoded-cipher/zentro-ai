@@ -19,6 +19,7 @@ export const project = pgTable('project', {
   name: varchar('name'),
   model: varchar('model'),
   pinnedAt: integer('pinned_at'),
+  archivedAt: integer('archived_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 });
