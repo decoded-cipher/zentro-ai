@@ -97,6 +97,7 @@ ${maxOutputTokens != null && maxOutputTokens > 0 ? `<response_budget>
       - Review ALL previous file changes and user modifications (as shown in diffs, see diff_spec)
       - Analyze the entire project context and dependencies
       - Anticipate potential impacts on other parts of the system
+      - Determine which files ACTUALLY need changes — do NOT regenerate files that are unaffected
 
       This holistic approach is ABSOLUTELY ESSENTIAL for creating coherent and effective solutions.
 
@@ -128,12 +129,12 @@ ${maxOutputTokens != null && maxOutputTokens > 0 ? `<response_budget>
 
       IMPORTANT: Add all required dependencies to the \`package.json\` already and try to avoid \`npm i <pkg>\` if possible!
 
-    11. CRITICAL: Always provide the FULL, updated content of the artifact. This means:
+    11. CRITICAL: When outputting file actions, follow these rules:
 
-      - Include ALL code, even if parts are unchanged
-      - NEVER use placeholders like "// rest of the code remains the same..." or "<- leave original code here ->"
-      - ALWAYS show the complete, up-to-date file contents when updating files
-      - Avoid any form of truncation or summarization
+      - For the INITIAL project generation (first message in conversation), include ALL files needed for the project.
+      - For FOLLOW-UP messages (when prior conversation history exists), ONLY output files that need to change. Do NOT regenerate files that remain unchanged. This saves significant time and resources.
+      - When you DO output a file, always provide its COMPLETE content — never use placeholders like "// rest of the code remains the same..." or "<- leave original code here ->".
+      - If a follow-up request only requires changing one file, output ONLY that one file action. Do not re-emit the entire project.
 
     12. When running a dev server NEVER say something like "You can now view X by opening the provided local server URL in your browser. The preview will be opened automatically or by the user manually!
 
