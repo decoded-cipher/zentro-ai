@@ -1,15 +1,25 @@
-| date       | type       | area     | summary                                                                                  |
-|------------|------------|----------|------------------------------------------------------------------------------------------|
-| 2025-11-22 | feature    | frontend | Create a new stable UI and migrate to Nuxt.js for improved performance and maintainability. |
-| 2025-11-23 | feature    | db       | Implement a database package and set up Docker Compose for PostgreSQL integration.     |
-| 2025-11-24 | feature    | auth     | Integrate Hono and Clerk for user authentication in the server.                       |
-| 2025-12-01 | feature    | worker   | Add Redis and RabbitMQ support for improved message queuing and processing.           |
-| 2025-12-04 | feature    | chat     | Enhance chat functionality with an implemented chat worker supporting SSE for message processing. |
-| 2025-12-07 | feature    | infra    | Introduce Docker networking and dynamic chat queues for better project file management. |
-| 2025-12-09 | feature    | frontend | Refactor the chat page to utilize reusable components and improve user interaction.    |
-| 2025-12-10 | feature    | frontend | Develop a dynamic component for device preview to enhance user interface experiences.  |
-| 2025-12-13 | feature    | exports  | Implement project download functionality in ZIP format for easier asset management.    |
-| 2026-01-15 | feature    | deployment| Add GitHub Actions workflows for automatic deployment of promo site.                  |
-| 2026-01-19 | feature    | video    | Integrate Vimeo Player API and optimize video display on the index page.               |
-| 2026-02-14 | feature    | ai       | Enhance the AI usability with new model selection and user prompt-driven project naming. |
-| 2026-02-18 | feature    | changelog| Automate changelog generation with AI workflows to improve documentation processes.     |
+| date       | type      | area     | summary                                                                      |
+|------------|-----------|----------|------------------------------------------------------------------------------|
+| 2025-11-22 | feature   | -        | Introduce create-turbo package transforms for startup project enhancements.  |
+| 2025-11-22 | feature   | frontend | Develop a new stable UI for improved user interactions.                     |
+| 2025-11-23 | feature   | db       | Implement a new database package with Docker Compose for PostgreSQL.        |
+| 2025-11-23 | feature   | -        | Write A/B tests to validate new features and ensure quality.                |
+| 2025-11-24 | feature   | server   | Migrate project architecture to Nuxt.js framework for enhanced performance. |
+| 2025-11-24 | feature   | -        | Implement Hono + Clerk authentication in the server for secure access.      |
+| 2025-11-28 | feature   | -        | Restructure project layout for better organization and maintenance.         |
+| 2025-11-29 | feature   | db       | Update database schema to support new functionalities.                       |
+| 2025-11-30 | feature   | infra    | Add RabbitMQ package to enhance messaging capabilities in the infrastructure.|
+| 2025-11-30 | feature   | db       | Clean up database migrations and fix application routes.                     |
+| 2025-12-01 | feature   | frontend | Introduce a new sidebar and embed Code Server for connection management.    |
+| 2025-12-01 | fix       | frontend | Address styling issues in the Code Server interface.                        |
+| 2025-12-04 | feature   | worker   | Implement a chat worker with SSE support for real-time message processing.   |
+| 2025-12-06 | feature   | infra    | Develop a dynamic chat queue and save project files using CRON schedules.   |
+| 2025-12-07 | feature   | -        | Enhance Docker networking for project management and improve infrastructure. |
+| 2025-12-09 | feature   | frontend | Enhance chat page with better component reuse and new device preview features.|
+| 2025-12-10 | feature   | frontend | Create a dynamic component for device preview to improve user interface.    |
+| 2025-12-13 | feature   | -        | Launch project download functionality (ZIP) for user convenience.          |
+| 2026-01-15 | feature   | ci       | Add GitHub Actions workflow for automated deployment of the promo site.     |
+| 2026-01-19 | feature   | frontend | Integrate Vimeo Player API to enhance video display features on the index page.|
+| 2026-02-14 | feature   | -        | Implement various enhancements for user-generated project names and utilities.|
+| 2026-02-18 | feature   | frontend | Introduce new waitlist feature with modal functionality for user interactions.|
+| 2026-02-22 | feature   | -        | Enhance prompts with guidelines to improve user file change requests.       |
