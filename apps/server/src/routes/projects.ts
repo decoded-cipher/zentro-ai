@@ -134,7 +134,7 @@ router.patch('/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId')
     const body = await c.req.json()
-    const { model: modelId } = body
+    const { model: modelId, name: newName } = body
 
     const [existing] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
     if (!existing) {
@@ -146,6 +146,9 @@ router.patch('/:projectId', async (c) => {
     }
     if (modelId !== undefined) {
       updates.model = modelId || null
+    }
+    if (newName !== undefined) {
+      updates.name = newName?.trim() || null
     }
 
     const [updated] = await db
