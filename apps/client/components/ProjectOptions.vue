@@ -19,7 +19,7 @@
   <button
     v-else
     @click="emit('select')"
-    class="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
+    class="group relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
     :class="[
       active
         ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
@@ -28,19 +28,34 @@
           : 'text-foreground/70 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground'
     ]"
   >
-    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    <svg class="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
     </svg>
     <span class="truncate flex-1">{{ project.name ?? 'New Project' }}</span>
+    
+    <span
+      v-if="pinned"
+      class="p-1.5 -my-1 -mr-1 text-orange-400 dark:text-orange-500 transition-opacity group-hover:opacity-0"
+      :class="isDropdownOpen ? 'opacity-0' : 'opacity-100'"
+    >
+      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.178 0-.33-.018-.446-.036l-3.02 3.02a4 4 0 0 1 .166 1.181c0 .793-.465 1.63-1.38 2.399l-.397.344a.5.5 0 0 1-.725-.05L5.6 10.794 2.354 14.04a.5.5 0 1 1-.708-.708L4.9 10.08 1.676 6.828a.5.5 0 0 1-.05-.726l.344-.396C2.74 4.79 3.577 4.326 4.37 4.326c.408 0 .804.06 1.18.166l3.02-3.02a3 3 0 0 1-.036-.447c0-.432.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
+      </svg>
+    </span>
+
     <span
       @click.stop="toggleDropdown($event)"
       class="p-1.5 -my-1 -mr-1 rounded-md transition-opacity text-foreground/40 hover:text-foreground/70 hover:bg-orange-100/60 dark:hover:bg-orange-900/30"
-      :class="isDropdownOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+      :class="[
+        isDropdownOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+        pinned ? 'absolute right-3' : ''
+      ]"
     >
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
         <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
     </span>
+    
   </button>
   <Teleport to="body">
     <Transition name="dropdown">
@@ -82,6 +97,7 @@
         </button>
         <div class="mx-2 my-1 border-t border-black/5 dark:border-white/10" />
         <button
+          @click="togglePin"
           class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,6 +133,7 @@
 interface Project {
   id: string
   name: string | null
+  pinnedAt: number | null
   createdAt: number
   updatedAt: number
 }
@@ -130,6 +147,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: []
   active: [value: boolean]
+  pin: [pinned: boolean]
 }>()
 
 const { apiClient, API_ENDPOINTS } = useApi()
@@ -181,6 +199,11 @@ const saveRename = async () => {
     console.error('Failed to rename project:', err)
     props.project.name = oldName
   }
+}
+
+const togglePin = () => {
+  isDropdownOpen.value = false
+  emit('pin', !props.pinned)
 }
 
 const cancelRename = () => {
