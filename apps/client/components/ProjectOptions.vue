@@ -1,10 +1,10 @@
 <template>
   <div
     v-if="isRenaming"
-    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-900/20"
+    class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-900/20"
   >
     <svg class="w-5 h-5 flex-shrink-0 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
     <input
       :ref="(el) => { renameInputRef = el as HTMLInputElement }"
@@ -19,7 +19,7 @@
   <button
     v-else
     @click="emit('select')"
-    class="group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
+    class="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left"
     :class="[
       active
         ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
@@ -29,7 +29,7 @@
     ]"
   >
     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
     <span class="truncate flex-1">{{ project.name ?? 'New Project' }}</span>
     <span
@@ -47,23 +47,64 @@
       <div
         v-if="isDropdownOpen"
         @mousedown.stop
-        class="fixed w-40 p-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 z-[100]"
+        class="fixed w-44 p-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 z-[100]"
         :style="dropdownPosition"
       >
         <button
-          @click="startRename"
-          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Share
+        </button>
+        <button
+          @click="startRename"
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           Rename
         </button>
         <button
-          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          class="w-full flex items-center justify-between px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          <span class="flex items-center gap-2.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            Move to folder
+          </span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <div class="mx-2 my-1 border-t border-black/5 dark:border-white/10" />
+        <button
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 3l-4 4-4-1-3 3 5 5-4 4h2l3-3 5 5 3-3-1-4 4-4-6-6z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 19l4-4" />
+          </svg>
+          {{ pinned ? 'Unpin chat' : 'Pin chat' }}
+        </button>
+        <button
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7H4a1 1 0 01-1-1V4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-1 1z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 7v12a2 2 0 002 2h10a2 2 0 002-2V7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11v4m0 0l-2-2m2 2l2-2" />
+          </svg>
+          Archive
+        </button>
+        <button
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
           Delete
         </button>
@@ -83,6 +124,7 @@ interface Project {
 const props = defineProps<{
   project: Project
   active: boolean
+  pinned?: boolean
 }>()
 
 const emit = defineEmits<{
