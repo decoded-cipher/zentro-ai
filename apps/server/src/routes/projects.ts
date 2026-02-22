@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db, project, prompt, withDefaults } from '@repo/db'
-import { eq, asc, desc } from 'drizzle-orm'
+import { eq, asc, desc, isNotNull, isNull, sql } from 'drizzle-orm'
 import { publish, ensureQueue } from '@repo/queue'
 import { getProject, tryProvLock } from '@repo/redis'
 
@@ -18,7 +18,11 @@ router.get('/', async (c) => {
     const projects = await db
       .select()
       .from(project)
-      .orderBy(desc(project.updatedAt))
+      .orderBy(
+        sql`CASE WHEN ${project.pinnedAt} IS NOT NULL THEN 0 ELSE 1 END`,
+        desc(project.pinnedAt),
+        desc(project.updatedAt)
+      )
       .limit(limit + 1)
       .offset(offset)
     
@@ -134,14 +138,14 @@ router.patch('/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId')
     const body = await c.req.json()
-    const { model: modelId, name: newName } = body
+    const { model: modelId, name: newName, pinnedAt: pinnedAtValue } = body
 
     const [existing] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
     if (!existing) {
       return c.json({ error: 'Project not found' }, 404)
     }
 
-    const updates: Partial<{ name: string | null; model: string | null; updatedAt: number }> = {
+    const updates: Partial<{ name: string | null; model: string | null; pinnedAt: number | null; updatedAt: number }> = {
       updatedAt: Math.floor(Date.now() / 1000),
     }
     if (modelId !== undefined) {
@@ -149,6 +153,9 @@ router.patch('/:projectId', async (c) => {
     }
     if (newName !== undefined) {
       updates.name = newName?.trim() || null
+    }
+    if (pinnedAtValue !== undefined) {
+      updates.pinnedAt = pinnedAtValue
     }
 
     const [updated] = await db

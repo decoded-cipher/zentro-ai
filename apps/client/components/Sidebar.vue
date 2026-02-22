@@ -32,7 +32,7 @@
           <!-- Navigation items -->
           <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <div class="pt-4 flex flex-col min-h-0">
-              <p class="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 px-3 flex-shrink-0">Recent Projects</p>
+              <p class="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 px-3 flex-shrink-0">Recent Chats</p>
               <div v-if="isLoading" class="px-3 py-2">
                 <div class="animate-pulse space-y-2">
                   <div class="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4"></div>
@@ -42,13 +42,16 @@
               </div>
               <template v-else-if="projects.length > 0">
                 <div class="overflow-y-auto max-h-full space-y-1">
+                  
                   <ProjectOptions
                     v-for="project in projects"
                     :key="project.id"
                     :project="project"
                     :active="route.path === `/chat/${project.id}`"
+                    :pinned="!!project.pinnedAt"
                     @select="openProject(project.id)"
                     @active="isDropdownOpen = $event"
+                    @pin="(pinned) => togglePin(project, pinned)"
                   />
                   
                   <!-- Load More Button -->
@@ -103,6 +106,7 @@
 interface Project {
   id: string
   name: string | null
+  pinnedAt: number | null
   createdAt: number
   updatedAt: number
 }
@@ -151,6 +155,20 @@ const fetchProjects = async (page = 1, append = false) => {
 const loadMore = () => {
   if (!isLoadingMore.value && hasMore.value) {
     fetchProjects(currentPage.value + 1, true)
+  }
+}
+
+const togglePin = async (proj: Project, pinned: boolean) => {
+  const previousPinnedAt = proj.pinnedAt
+  const newPinnedAt = pinned ? Math.floor(Date.now() / 1000) : null
+  proj.pinnedAt = newPinnedAt
+
+  try {
+    await apiClient.patch(API_ENDPOINTS.projects.update(proj.id), { pinnedAt: newPinnedAt })
+    await fetchProjects()
+  } catch (err) {
+    console.error('Failed to toggle pin:', err)
+    proj.pinnedAt = previousPinnedAt
   }
 }
 

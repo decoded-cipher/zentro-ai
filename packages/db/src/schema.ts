@@ -18,6 +18,7 @@ export const project = pgTable('project', {
   // userId: varchar('user_id').notNull().references(() => user.id),
   name: varchar('name'),
   model: varchar('model'),
+  pinnedAt: integer('pinned_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 });
