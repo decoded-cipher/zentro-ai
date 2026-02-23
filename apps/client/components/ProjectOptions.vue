@@ -66,7 +66,8 @@
         :style="dropdownPosition"
       >
         <button
-          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+          disabled
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/40 cursor-not-allowed opacity-60 transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -83,7 +84,8 @@
           Rename
         </button>
         <button
-          class="w-full flex items-center justify-between px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/80 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-foreground transition-colors"
+          disabled
+          class="w-full flex items-center justify-between px-2 py-1.5 text-[13px] font-medium rounded-lg text-foreground/40 cursor-not-allowed opacity-60 transition-colors"
         >
           <span class="flex items-center gap-2.5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +120,8 @@
           Archive
         </button>
         <button
-          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          disabled
+          class="w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-lg text-red-400/60 dark:text-red-500/50 cursor-not-allowed opacity-60 transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
