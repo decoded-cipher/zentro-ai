@@ -112,9 +112,15 @@
 <script setup lang="ts">
 const router = useRouter()
 const { apiClient, API_ENDPOINTS } = useApi()
+const { defaultModelId } = useModels()
+const projectsStore = useProjectsStore()
+const preferencesStore = usePreferencesStore()
 
 const prompt = ref('')
-const selectedModel = ref('')
+const selectedModel = computed({
+  get: () => preferencesStore.lastSelectedModelId ?? defaultModelId.value ?? '',
+  set: (v) => preferencesStore.setLastSelectedModel(v || null),
+})
 const isSubmitting = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isMaxHeight = ref(false)
@@ -162,11 +168,19 @@ const handleSubmit = async (e: Event) => {
   try {
     const response = await apiClient.post(API_ENDPOINTS.projects.create, {
       prompt: prompt.value.trim(),
-      model: selectedModel.value || undefined,
+      model: selectedModel.value || defaultModelId.value,
     })
 
     const projectId = response.data.id
-    console.log('Created project with ID:', projectId)
+    const now = Math.floor(Date.now() / 1000)
+    projectsStore.addProject({
+      id: projectId,
+      name: null,
+      pinnedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    preferencesStore.setLastSelectedModel(selectedModel.value || null)
 
     router.push(`/chat/${projectId}`)
   } catch (error: any) {

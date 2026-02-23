@@ -22,12 +22,14 @@
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@pinia/nuxt": "^0.11.3",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@types/marked": "^6.0.0",
     "@types/node": "^22.15.3",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
+    "pinia": "^3.0.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^3",
     "typescript": "5.9.2",
