@@ -221,6 +221,7 @@ async function handleModelChange(newModel: string) {
       model: newModel || null,
     })
     projectModel.value = newModel || null
+    usePreferencesStore().setLastSelectedModel(newModel || null)
   } catch (err) {
     console.error('Failed to update model', err)
   }

@@ -52,7 +52,7 @@
                     @select="openProject(project.id)"
                     @active="isDropdownOpen = $event"
                     @pin="(pinned) => togglePin(project, pinned)"
-                    @archive="archiveProject(project)"
+                    @archive="handleArchiveProject(project)"
                   />
                   
                   <!-- Load More Button -->
@@ -107,88 +107,24 @@
 </template>
 
 <script setup lang="ts">
-interface Project {
-  id: string
-  name: string | null
-  pinnedAt: number | null
-  createdAt: number
-  updatedAt: number
-}
+import type { Project } from '~/stores/projects'
 
-const { apiClient, API_ENDPOINTS } = useApi()
+const projectsStore = useProjectsStore()
 const route = useRoute()
 const router = useRouter()
 
 const isOpen = ref(false)
-const projects = ref<Project[]>([])
-const isLoading = ref(false)
-const isLoadingMore = ref(false)
-const hasMore = ref(false)
-const currentPage = ref(1)
-let closeTimeout: ReturnType<typeof setTimeout> | null = null
+const { projects, isLoading, isLoadingMore, hasMore } = storeToRefs(projectsStore)
+const { fetchProjects, loadMore, archiveProject, togglePin } = projectsStore
 
+let closeTimeout: ReturnType<typeof setTimeout> | null = null
 const isDropdownOpen = ref(false)
 const isSettingsOpen = ref(false)
 
-const fetchProjects = async (page = 1, append = false) => {
-  if (page === 1) {
-    isLoading.value = true
-  } else {
-    isLoadingMore.value = true
-  }
-  try {
-    const response = await apiClient.get(`${API_ENDPOINTS.projects.getAll}?page=${page}&archived=false`)
-    const newProjects = response.data.projects || []
-    if (append) {
-      projects.value = [...projects.value, ...newProjects]
-    } else {
-      projects.value = newProjects
-    }
-    hasMore.value = response.data.hasMore || false
-    currentPage.value = page
-  } catch (error) {
-    console.error('Failed to fetch projects:', error)
-    if (!append) {
-      projects.value = []
-    }
-  } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
-  }
-}
-
-const loadMore = () => {
-  if (!isLoadingMore.value && hasMore.value) {
-    fetchProjects(currentPage.value + 1, true)
-  }
-}
-
-const archiveProject = async (proj: Project) => {
-  const archivedAt = Math.floor(Date.now() / 1000)
-  projects.value = projects.value.filter(p => p.id !== proj.id)
-
-  try {
-    await apiClient.patch(API_ENDPOINTS.projects.update(proj.id), { archivedAt })
-    if (route.path === `/chat/${proj.id}`) {
-      router.push('/')
-    }
-  } catch (err) {
-    console.error('Failed to archive project:', err)
-    await fetchProjects()
-  }
-}
-
-const togglePin = async (proj: Project, pinned: boolean) => {
-  const previousPinnedAt = proj.pinnedAt
-  const newPinnedAt = pinned ? Math.floor(Date.now() / 1000) : null
-  proj.pinnedAt = newPinnedAt
-
-  try {
-    await apiClient.patch(API_ENDPOINTS.projects.update(proj.id), { pinnedAt: newPinnedAt })
-    await fetchProjects()
-  } catch (err) {
-    console.error('Failed to toggle pin:', err)
-    proj.pinnedAt = previousPinnedAt
+const handleArchiveProject = async (proj: Project) => {
+  await projectsStore.archiveProject(proj)
+  if (route.path === `/chat/${proj.id}`) {
+    router.push('/')
   }
 }
 

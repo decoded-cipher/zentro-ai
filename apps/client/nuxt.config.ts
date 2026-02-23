@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/globals.css'],
   
   modules: [
+    '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@vueuse/nuxt',
     '@clerk/nuxt',
