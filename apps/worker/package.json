@@ -7,7 +7,7 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.0",
+    "@repo/llm": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/queue": "workspace:*",
     "@repo/redis": "workspace:*",
