@@ -112,7 +112,7 @@
 <script setup lang="ts">
 const router = useRouter()
 const { apiClient, API_ENDPOINTS } = useApi()
-const { defaultModelId } = useModels()
+const { defaultModelId, getProviderForModel } = useModels()
 const projectsStore = useProjectsStore()
 const preferencesStore = usePreferencesStore()
 
@@ -166,9 +166,12 @@ const handleSubmit = async (e: Event) => {
   isSubmitting.value = true
 
   try {
+    const modelId = selectedModel.value || defaultModelId.value || ''
+    const providerId = getProviderForModel(modelId)
+
     const response = await apiClient.post(API_ENDPOINTS.projects.create, {
       prompt: prompt.value.trim(),
-      model: selectedModel.value || defaultModelId.value,
+      model: providerId && modelId ? { provider: providerId, name: modelId } : null,
     })
 
     const projectId = response.data.id
@@ -180,7 +183,7 @@ const handleSubmit = async (e: Event) => {
       createdAt: now,
       updatedAt: now,
     })
-    preferencesStore.setLastSelectedModel(selectedModel.value || null)
+    preferencesStore.setLastSelected(providerId || null, selectedModel.value || null)
 
     router.push(`/chat/${projectId}`)
   } catch (error: any) {

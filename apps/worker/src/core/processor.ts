@@ -1,7 +1,8 @@
 
-import Anthropic from "@anthropic-ai/sdk";
 import { eq, asc } from 'drizzle-orm';
 
+import { createProvider } from '@repo/llm';
+import type { LLMProvider } from '@repo/llm';
 import { db, project as projectTable, prompt as promptTable, withDefaults } from '@repo/db';
 import { getSystemPrompt } from '../helpers/prompts';
 import { broadcastToSSE } from '../helpers/sse';
@@ -10,26 +11,49 @@ import { parseArtifacts, extractNonArtifactText } from './parser';
 import { executeArtifact } from './executor';
 
 
-const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY || '' });
 const BASE_WORK_DIR = '/tmp/zentro';
 const maxTokens = Number(process.env.CLAUDE_MAX_TOKENS!);
 
+const DEFAULT_PROVIDER = 'anthropic';
+const DEFAULT_MODEL = process.env.CLAUDE_REASONING_MODEL || '';
+
+const API_KEYS: Record<string, string> = {
+    anthropic: process.env.CLAUDE_API_KEY || '',
+    google: process.env.GEMINI_API_KEY || '',
+};
+
+const providerCache = new Map<string, LLMProvider>();
+
+function getProvider(providerName: string): LLMProvider {
+    const name = providerName || DEFAULT_PROVIDER;
+    if (providerCache.has(name)) return providerCache.get(name)!;
+
+    const apiKey = API_KEYS[name];
+    if (!apiKey) throw new Error(`No API key configured for provider: ${name}`);
+
+    const provider = createProvider(name as any, { apiKey });
+    providerCache.set(name, provider);
+    return provider;
+}
 
 
 // Generate project name from prompt
-async function generateProjectName(projectId: string, promptText: string) {
+async function generateProjectName(projectId: string, promptText: string, providerName: string) {
     try {
-        const msg = await anthropic.messages.create({
-            model: process.env.CLAUDE_UTILITY_MODEL! || '',
-            max_tokens: 50,
+        const llm = getProvider(providerName);
+        const model = providerName === 'anthropic'
+            ? (process.env.CLAUDE_UTILITY_MODEL || DEFAULT_MODEL)
+            : DEFAULT_MODEL;
+
+        const result = await llm.complete({
+            model,
+            maxTokens: 50,
             messages: [{
                 role: 'user',
                 content: `Generate a short project name (2-5 words) for this request. Reply with ONLY the name, no quotes or punctuation: ${promptText.slice(0, 500)}`
             }]
         });
-        const block = msg.content[0];
-        const raw = block && 'text' in block ? block.text : '';
-        const name = raw.trim().slice(0, 100) || 'New Project';
+        const name = result.text.trim().slice(0, 100) || 'New Project';
         const now = Math.floor(Date.now() / 1000);
         await db.update(projectTable).set({ name, updatedAt: now }).where(eq(projectTable.id, projectId));
     } catch (e) {
@@ -43,15 +67,17 @@ async function generateProjectName(projectId: string, promptText: string) {
 export async function processChat(projectId: string, promptText: string) {
     try {
         
-        // 1. Get model preference
+        // 1. Get provider + model preference
         const [projectRow] = await db
             .select({ model: projectTable.model })
             .from(projectTable)
             .where(eq(projectTable.id, projectId))
             .limit(1);
         
-        const projectModel = projectRow?.model ?? null;
-        const reasoningModel = projectModel || process.env.CLAUDE_REASONING_MODEL! || '';
+        const modelConfig = projectRow?.model as { provider: string; name: string } | null;
+        const providerName = modelConfig?.provider || DEFAULT_PROVIDER;
+        const reasoningModel = modelConfig?.name || DEFAULT_MODEL;
+        const llm = getProvider(providerName);
 
         // 2. Save user prompt
         const [userPrompt] = await db.insert(promptTable).values(withDefaults({
@@ -70,47 +96,36 @@ export async function processChat(projectId: string, promptText: string) {
 
         // 4. Generate project name
         if (allMessages.length === 1) {
-            generateProjectName(projectId, promptText);
+            generateProjectName(projectId, promptText, providerName);
         }
 
-        // 5. Convert to Claude format - the API expects an array of message objects
+        // 5. Convert to message format
         const messages = allMessages.map(msg => ({
-            role: msg.type === 'USER' ? 'user' : 'assistant' as const,
+            role: (msg.type === 'USER' ? 'user' : 'assistant') as 'user' | 'assistant',
             content: msg.text
         }));
 
         // 6. Add the new user prompt
         const systemPrompt = getSystemPrompt(BASE_WORK_DIR, maxTokens);
         
-        // 7. Call Claude API with streaming
+        // 7. Call LLM with streaming
         let fullResponse = "";
-        const stream = await anthropic.messages.stream({
-            model: reasoningModel,
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            messages: messages,
-        });
-
         let userInputTokens: number | null = null;
         let assistantOutputTokens: number | null = null;
-        
-        for await (const chunk of stream) {
-            if (chunk.type === 'message_start' && chunk.message?.usage?.input_tokens != null) {
-                userInputTokens = chunk.message.usage.input_tokens;
+
+        for await (const event of llm.stream({
+            model: reasoningModel,
+            maxTokens,
+            system: systemPrompt,
+            messages,
+        })) {
+            if (event.type === 'text') {
+                fullResponse += event.text;
+                broadcastToSSE({ projectId, content: event.text, type: 'content' });
             }
-            if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                const content = chunk.delta.text;
-                if (content) {
-                    fullResponse += content;
-                    broadcastToSSE({
-                        projectId,
-                        content,
-                        type: 'content'
-                    });
-                }
-            }
-            if (chunk.type === 'message_delta' && chunk.usage?.output_tokens != null) {
-                assistantOutputTokens = chunk.usage.output_tokens;
+            if (event.type === 'usage') {
+                userInputTokens = event.inputTokens;
+                assistantOutputTokens = event.outputTokens;
             }
         }
 

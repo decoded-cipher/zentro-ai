@@ -52,7 +52,7 @@
               </div>
             </template>
             <template v-else>
-              <div v-for="provider in filteredProviders" :key="provider.id" class="py-0.5 first:pt-0">
+              <div v-for="provider in filteredProviders" :key="provider.providerId" class="py-0.5 first:pt-0">
                 <div class="px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {{ provider.name }}
                 </div>
@@ -72,7 +72,7 @@
                     :disabled="m.disabled"
                     @click="!m.disabled && select(m.id)"
                   >
-                    <ProviderIcon :provider-id="provider.id" size="xs" />
+                    <ProviderIcon :provider-id="provider.providerId" size="xs" />
                     <span v-if="!m.disabled && model === m.id" class="text-orange-500 text-[10px]">✓</span>
                     <span v-else class="w-3" />
                     <span class="truncate flex-1 min-w-0">{{ m.label }}</span>
@@ -80,7 +80,7 @@
                   </button>
                 </template>
                 <div v-else class="px-2 py-1.5 text-[10px] text-muted-foreground">
-                  {{ provider.id === 'local' ? 'No local models.' : 'None.' }}
+                  {{ provider.providerId === 'local' ? 'No local models.' : 'None.' }}
                 </div>
               </div>
             </template>
@@ -125,7 +125,7 @@ const filteredProviders = computed(() => {
       ...p,
       models: p.models.filter((m) => m.label.toLowerCase().includes(q)),
     }))
-    .filter((p) => p.models.length > 0 || p.id === 'local')
+    .filter((p) => p.models.length > 0 || p.providerId === 'local')
 })
 
 const panelStyle = computed(() => {

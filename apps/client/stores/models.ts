@@ -8,7 +8,7 @@ export interface AIModel {
 }
 
 export interface ModelProvider {
-  id: string
+  providerId: string
   name: string
   models: AIModel[]
 }
@@ -72,7 +72,7 @@ export const useModelsStore = defineStore('models', () => {
   }
 
   function getProviderForModel(id: string) {
-    return find(id)?.provider.id ?? ''
+    return find(id)?.provider.providerId ?? ''
   }
 
   function invalidate() {

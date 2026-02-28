@@ -59,7 +59,7 @@ const chatId = computed(() => route.params.chat_id as string)
 // Composables
 const { apiClient, API_ENDPOINTS } = useApi()
 const { connectToWorker, sendChatMessage, disconnect } = useWorker()
-const { defaultModelId } = useModels()
+const { defaultModelId, getProviderForModel } = useModels()
 
 // Project status management
 const projectStatus = useProjectStatus(chatId)
@@ -208,7 +208,7 @@ async function fetchProject() {
   if (!chatId.value) return
   try {
     const { data } = await apiClient.get(API_ENDPOINTS.projects.get(chatId.value))
-    projectModel.value = data.model ?? null
+    projectModel.value = data.model?.name ?? null
   } catch {
     // ignore
   }
@@ -217,11 +217,12 @@ async function fetchProject() {
 async function handleModelChange(newModel: string) {
   if (!chatId.value) return
   try {
+    const providerId = getProviderForModel(newModel) || null
     await apiClient.patch(API_ENDPOINTS.projects.update(chatId.value), {
-      model: newModel || null,
+      model: providerId && newModel ? { provider: providerId, name: newModel } : null,
     })
     projectModel.value = newModel || null
-    usePreferencesStore().setLastSelectedModel(newModel || null)
+    usePreferencesStore().setLastSelected(providerId, newModel || null)
   } catch (err) {
     console.error('Failed to update model', err)
   }

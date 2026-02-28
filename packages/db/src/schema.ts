@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, index, unique } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, varchar, index, unique } from "drizzle-orm/pg-core";
 
 // export const user = pgTable('user', {
 //   id: varchar('id').primaryKey(),
@@ -17,7 +17,7 @@ export const project = pgTable('project', {
   id: varchar('id').primaryKey(),
   // userId: varchar('user_id').notNull().references(() => user.id),
   name: varchar('name'),
-  model: varchar('model'),
+  model: jsonb('model').$type<{ provider: string; name: string } | null>(),
   pinnedAt: integer('pinned_at'),
   archivedAt: integer('archived_at'),
   createdAt: integer('created_at').notNull(),

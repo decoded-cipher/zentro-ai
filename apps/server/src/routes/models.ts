@@ -10,7 +10,7 @@ export interface ModelItem {
 }
 
 export interface ModelProvider {
-  id: string
+  providerId: string
   name: string
   models: ModelItem[]
 }
@@ -31,9 +31,9 @@ const OPENAI_MODELS: ModelItem[] = [
 ]
 
 const GOOGLE_MODELS: ModelItem[] = [
-  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', disabled: true },
-  { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', disabled: true },
-  { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', disabled: true },
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
 ]
 
 const META_MODELS: ModelItem[] = [
@@ -62,11 +62,11 @@ router.get('/', async (c) => {
   const localModels = await discoverLocalModels()
 
   const providers: ModelProvider[] = [
-    { id: 'anthropic', name: 'Anthropic', models: ANTHROPIC_MODELS },
-    { id: 'openai', name: 'OpenAI', models: OPENAI_MODELS },
-    { id: 'google', name: 'Google', models: GOOGLE_MODELS },
-    { id: 'meta', name: 'Meta', models: META_MODELS },
-    { id: 'local', name: 'Local (Ollama)', models: localModels },
+    { providerId: 'anthropic', name: 'Anthropic', models: ANTHROPIC_MODELS },
+    { providerId: 'openai', name: 'OpenAI', models: OPENAI_MODELS },
+    { providerId: 'google', name: 'Google', models: GOOGLE_MODELS },
+    { providerId: 'meta', name: 'Meta', models: META_MODELS },
+    { providerId: 'local', name: 'Local (Ollama)', models: localModels },
   ]
 
   return c.json({ providers, defaultModelId: DEFAULT_MODEL_ID })

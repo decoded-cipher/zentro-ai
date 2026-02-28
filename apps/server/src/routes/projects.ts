@@ -79,9 +79,9 @@ router.get('/:projectId', async (c) => {
 router.post('/', async (c) => {
   try {
     const body = await c.req.json()
-    const { prompt: promptText, model: modelId } = body
+    const { prompt: promptText, model: modelData } = body
 
-    const projectData = { name: null, model: modelId ?? null }
+    const projectData = { name: null, model: modelData ?? null }
     
     const [insertedProject] = await db
       .insert(project)
@@ -151,18 +151,18 @@ router.patch('/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId')
     const body = await c.req.json()
-    const { model: modelId, name: newName, pinnedAt: pinnedAtValue, archivedAt: archivedAtValue } = body
+    const { model: modelData, name: newName, pinnedAt: pinnedAtValue, archivedAt: archivedAtValue } = body
 
     const [existing] = await db.select().from(project).where(eq(project.id, projectId)).limit(1)
     if (!existing) {
       return c.json({ error: 'Project not found' }, 404)
     }
 
-    const updates: Partial<{ name: string | null; model: string | null; pinnedAt: number | null; archivedAt: number | null; updatedAt: number }> = {
+    const updates: Record<string, any> = {
       updatedAt: Math.floor(Date.now() / 1000),
     }
-    if (modelId !== undefined) {
-      updates.model = modelId || null
+    if (modelData !== undefined) {
+      updates.model = modelData || null
     }
     if (newName !== undefined) {
       updates.name = newName?.trim() || null

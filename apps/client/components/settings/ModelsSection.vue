@@ -13,9 +13,9 @@
     </div>
 
     <div v-else class="space-y-5">
-      <div v-for="provider in providers" :key="provider.id">
+      <div v-for="provider in providers" :key="provider.providerId">
         <div class="flex items-center gap-2 mb-2">
-          <ProviderIcon :provider-id="provider.id" size="sm" />
+          <ProviderIcon :provider-id="provider.providerId" size="sm" />
           <h4 class="text-xs font-semibold text-foreground/50 uppercase tracking-wider">{{ provider.name }}</h4>
           <span class="text-[10px] text-foreground/30 font-medium">{{ provider.models.length }} model{{ provider.models.length !== 1 ? 's' : '' }}</span>
         </div>
@@ -34,7 +34,7 @@
           </div>
         </div>
         <p v-else class="px-3 py-2 text-xs text-foreground/40">
-          {{ provider.id === 'local' ? 'No local models detected. Make sure Ollama is running.' : 'No models available.' }}
+          {{ provider.providerId === 'local' ? 'No local models detected. Make sure Ollama is running.' : 'No models available.' }}
         </p>
       </div>
     </div>
