@@ -2,7 +2,7 @@
   <Teleport to="body">
     <Transition name="settings-modal">
       <div v-if="open" class="fixed inset-0 z-[200] flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" @click="close" />
+        <div class="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" />
 
         <div class="relative w-full max-w-6xl h-[720px] mx-4 flex rounded-xl bg-white dark:bg-neutral-900 border border-border shadow-2xl overflow-hidden">
           <!-- Sidebar nav -->
