@@ -2,12 +2,12 @@
 import { eq, asc } from 'drizzle-orm';
 
 import { createProvider } from '@repo/llm';
-import type { LLMProvider } from '@repo/llm';
-import { db, project as projectTable, prompt as promptTable, withDefaults } from '@repo/db';
+import { decryptApiKey } from '@repo/crypto';
+import { db, project as projectTable, prompt as promptTable, apiKey, withDefaults } from '@repo/db';
 import { getSystemPrompt } from '../helpers/prompts';
 import { broadcastToSSE } from '../helpers/sse';
 
-import { parseArtifacts, extractNonArtifactText } from './parser';
+import { parseArtifacts } from './parser';
 import { executeArtifact } from './executor';
 
 
@@ -17,30 +17,42 @@ const maxTokens = Number(process.env.CLAUDE_MAX_TOKENS!);
 const DEFAULT_PROVIDER = 'anthropic';
 const DEFAULT_MODEL = process.env.CLAUDE_REASONING_MODEL || '';
 
-const API_KEYS: Record<string, string> = {
-    anthropic: process.env.CLAUDE_API_KEY || '',
-    google: process.env.GEMINI_API_KEY || '',
+const ENV_API_KEYS: Record<string, string> = {
+  anthropic: process.env.CLAUDE_API_KEY || '',
+  google: process.env.GEMINI_API_KEY || '',
 };
 
-const providerCache = new Map<string, LLMProvider>();
+const providerCache = new Map();
 
-function getProvider(providerName: string): LLMProvider {
-    const name = providerName || DEFAULT_PROVIDER;
-    if (providerCache.has(name)) return providerCache.get(name)!;
+async function resolveApiKey(providerName) {
+  const rows = await db
+    .select({ encryptedKey: apiKey.encryptedKey, active: apiKey.active })
+    .from(apiKey)
+    .where(eq(apiKey.providerId, providerName));
+  const activeRow = rows.find((r) => r.active === 1);
+  if (activeRow) {
+    return decryptApiKey(activeRow.encryptedKey);
+  }
+  if (rows.length === 0) {
+    return ENV_API_KEYS[providerName] || '';
+  }
+  return '';
+}
 
-    const apiKey = API_KEYS[name];
-    if (!apiKey) throw new Error(`No API key configured for provider: ${name}`);
+function getProvider(providerName, apiKey) {
+  const name = providerName || DEFAULT_PROVIDER;
+  const cacheKey = `${name}:${apiKey.slice(0, 8)}`;
+  if (providerCache.has(cacheKey)) return providerCache.get(cacheKey)!;
 
-    const provider = createProvider(name as any, { apiKey });
-    providerCache.set(name, provider);
-    return provider;
+  const provider = createProvider(name as any, { apiKey });
+  providerCache.set(cacheKey, provider);
+  return provider;
 }
 
 
-// Generate project name from prompt
-async function generateProjectName(projectId: string, promptText: string, providerName: string) {
+async function generateProjectName(projectId, promptText, providerName, apiKey) {
     try {
-        const llm = getProvider(providerName);
+        const llm = getProvider(providerName, apiKey);
         const model = providerName === 'anthropic'
             ? (process.env.CLAUDE_UTILITY_MODEL || DEFAULT_MODEL)
             : DEFAULT_MODEL;
@@ -77,7 +89,11 @@ export async function processChat(projectId: string, promptText: string) {
         const modelConfig = projectRow?.model as { provider: string; name: string } | null;
         const providerName = modelConfig?.provider || DEFAULT_PROVIDER;
         const reasoningModel = modelConfig?.name || DEFAULT_MODEL;
-        const llm = getProvider(providerName);
+
+        const apiKey = await resolveApiKey(providerName);
+        if (!apiKey) throw new Error(`No API key for provider: ${providerName}. Add your key in Settings > Models.`);
+
+        const llm = getProvider(providerName, apiKey);
 
         // 2. Save user prompt
         const [userPrompt] = await db.insert(promptTable).values(withDefaults({
@@ -96,7 +112,7 @@ export async function processChat(projectId: string, promptText: string) {
 
         // 4. Generate project name
         if (allMessages.length === 1) {
-            generateProjectName(projectId, promptText, providerName);
+            generateProjectName(projectId, promptText, providerName, apiKey);
         }
 
         // 5. Convert to message format

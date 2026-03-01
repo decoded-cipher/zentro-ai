@@ -4,13 +4,13 @@
       <div v-if="open" class="fixed inset-0 z-[200] flex items-center justify-center">
         <div class="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" @click="close" />
 
-        <div class="relative w-full max-w-3xl h-[600px] mx-4 flex rounded-xl bg-white dark:bg-neutral-900 border border-border shadow-2xl overflow-hidden">
+        <div class="relative w-full max-w-6xl h-[720px] mx-4 flex rounded-xl bg-white dark:bg-neutral-900 border border-border shadow-2xl overflow-hidden">
           <!-- Sidebar nav -->
           <nav class="w-52 flex-shrink-0 border-r border-border bg-muted/30 flex flex-col">
             <div class="p-4 h-14 border-b border-border">
               <h2 class="text-sm font-semibold text-foreground">Settings</h2>
             </div>
-            <div class="flex-1 p-2 space-y-0.5">
+            <div class="flex-1 p-2 space-y-2">
               <button
                 v-for="section in sections"
                 :key="section.id"
@@ -42,11 +42,19 @@
               </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6">
-              <SettingsArchivedChats v-if="activeSection === 'archived'" />
-              <SettingsModelsSection v-else-if="activeSection === 'models'" />
-              <SettingsAccountSection v-else-if="activeSection === 'account'" />
-              <SettingsAboutSection v-else-if="activeSection === 'about'" />
+            <div class="flex-1 overflow-y-auto p-6 flex flex-col min-h-0">
+              <div
+                v-if="activeSection === 'models'"
+                class="flex-1 flex flex-col min-h-0"
+              >
+                <SettingsModelsSection />
+              </div>
+              <template v-else>
+                <SettingsArchivedChats v-if="activeSection === 'archived'" />
+                <SettingsApiKeysSection v-else-if="activeSection === 'api-keys'" />
+                <SettingsAccountSection v-else-if="activeSection === 'account'" />
+                <SettingsAboutSection v-else-if="activeSection === 'about'" />
+              </template>
             </div>
           </div>
         </div>
@@ -69,6 +77,11 @@ const sections = [
     id: 'models',
     label: 'Models',
     icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>',
+  },
+  {
+    id: 'api-keys',
+    label: 'API Keys',
+    icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>',
   },
   {
     id: 'account',

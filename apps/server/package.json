@@ -10,6 +10,8 @@
     "@hono/clerk-auth": "^1.0.0",
     "@hono/node-server": "^1.13.7",
     "@repo/db": "*",
+    "@repo/crypto": "workspace:*",
+    "@repo/llm": "workspace:*",
     "@repo/queue": "workspace:*",
     "@repo/redis": "workspace:*",
     "dotenv": "^16.3.1",
