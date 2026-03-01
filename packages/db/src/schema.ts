@@ -1,21 +1,32 @@
-import { integer, jsonb, pgTable, varchar, index, unique } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, varchar, index, unique, text } from "drizzle-orm/pg-core";
 
-// export const user = pgTable('user', {
-//   id: varchar('id').primaryKey(),
-//   email: varchar('email').notNull(),
-//   clerk_id: varchar('clerk_id').notNull(),
-//   createdAt: integer('created_at').notNull(),
-//   updatedAt: integer('updated_at').notNull()
-// }, (table) => ({
-//   emailIdx: index('email_idx').on(table.email),
-//   clerkIdIdx: index('clerk_id_idx').on(table.clerk_id),
-//   emailUnique: unique('email_unique').on(table.email),
-//   clerkIdUnique: unique('clerk_id_unique').on(table.clerk_id),
-// }));
+/** API keys for LLM providers. Multiple keys per provider. Keys encrypted at rest. */
+export const apiKey = pgTable('api_key', {
+  id: varchar('id').primaryKey(),
+  providerId: varchar('provider_id').notNull(),
+  label: varchar('label'),
+  active: integer('active').notNull().default(0),
+  encryptedKey: text('encrypted_key').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  providerIdx: index('api_key_provider').on(table.providerId),
+}));
+
+/** User model preferences: which models are enabled. No row = use catalog default. */
+export const enabledModel = pgTable('enabled_model', {
+  id: varchar('id').primaryKey(),
+  providerId: varchar('provider_id').notNull(),
+  modelId: varchar('model_id').notNull(),
+  enabled: integer('enabled').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  providerModelIdx: unique('enabled_model_provider_model').on(table.providerId, table.modelId),
+}));
 
 export const project = pgTable('project', {
   id: varchar('id').primaryKey(),
-  // userId: varchar('user_id').notNull().references(() => user.id),
   name: varchar('name'),
   model: jsonb('model').$type<{ provider: string; name: string } | null>(),
   pinnedAt: integer('pinned_at'),

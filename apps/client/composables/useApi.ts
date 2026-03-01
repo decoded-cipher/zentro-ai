@@ -44,7 +44,14 @@ export const useApi = () => {
     chat: {
       create: (projectId: string) => `/projects/${projectId}/chat`,
     },
-    models: '/models',
+    models: {
+      list: '/models',
+      apiKeys: '/models/api-keys',
+      addApiKey: '/models/api-keys',
+      setKeyDefault: (id: string) => `/models/api-keys/${id}`,
+      removeApiKey: (id: string) => `/models/api-keys/${id}`,
+      toggle: '/models/toggle',
+    },
   }
 
   return {

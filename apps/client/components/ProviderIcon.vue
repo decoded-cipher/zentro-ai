@@ -21,6 +21,15 @@ import anthropicSvg from '@lobehub/icons-static-svg/icons/anthropic.svg?raw'
 import googleSvg from '@lobehub/icons-static-svg/icons/google.svg?raw'
 import metaSvg from '@lobehub/icons-static-svg/icons/meta.svg?raw'
 import ollamaSvg from '@lobehub/icons-static-svg/icons/ollama.svg?raw'
+import mistralSvg from '@lobehub/icons-static-svg/icons/mistral.svg?raw'
+import deepseekSvg from '@lobehub/icons-static-svg/icons/deepseek.svg?raw'
+import xaiSvg from '@lobehub/icons-static-svg/icons/xai.svg?raw'
+import cohereSvg from '@lobehub/icons-static-svg/icons/cohere.svg?raw'
+import perplexitySvg from '@lobehub/icons-static-svg/icons/perplexity.svg?raw'
+import togetherSvg from '@lobehub/icons-static-svg/icons/together.svg?raw'
+import groqSvg from '@lobehub/icons-static-svg/icons/groq.svg?raw'
+import fireworksSvg from '@lobehub/icons-static-svg/icons/fireworks.svg?raw'
+import openrouterSvg from '@lobehub/icons-static-svg/icons/openrouter.svg?raw'
 
 const ICONS: Record<string, string> = {
   openai: openaiSvg,
@@ -28,6 +37,15 @@ const ICONS: Record<string, string> = {
   google: googleSvg,
   meta: metaSvg,
   local: ollamaSvg,
+  mistral: mistralSvg,
+  deepseek: deepseekSvg,
+  xai: xaiSvg,
+  cohere: cohereSvg,
+  perplexity: perplexitySvg,
+  together: togetherSvg,
+  groq: groqSvg,
+  fireworks: fireworksSvg,
+  openrouter: openrouterSvg,
 }
 
 const props = withDefaults(

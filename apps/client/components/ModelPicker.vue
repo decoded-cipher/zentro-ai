@@ -63,20 +63,16 @@
                     type="button"
                     class="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md transition-colors text-xs"
                     :class="[
-                      m.disabled
-                        ? 'cursor-not-allowed opacity-50 text-muted-foreground'
-                        : model === m.id
+                      model === m.id
                           ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium'
                           : 'text-foreground hover:bg-muted',
                     ]"
-                    :disabled="m.disabled"
-                    @click="!m.disabled && select(m.id)"
+                    @click="select(m.id)"
                   >
                     <ProviderIcon :provider-id="provider.providerId" size="xs" />
-                    <span v-if="!m.disabled && model === m.id" class="text-orange-500 text-[10px]">✓</span>
+                    <span v-if="model === m.id" class="text-orange-500 text-[10px]">✓</span>
                     <span v-else class="w-3" />
                     <span class="truncate flex-1 min-w-0">{{ m.label }}</span>
-                    <span v-if="m.disabled" class="text-[9px] text-muted-foreground shrink-0">Coming soon</span>
                   </button>
                 </template>
                 <div v-else class="px-2 py-1.5 text-[10px] text-muted-foreground">
@@ -155,6 +151,10 @@ function onClickOutside(e: MouseEvent) {
     open.value = false
   }
 }
+
+onMounted(() => {
+  fetchModels()
+})
 
 watch(open, (isOpen) => {
   if (isOpen) {

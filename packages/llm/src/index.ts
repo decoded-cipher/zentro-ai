@@ -4,12 +4,11 @@ export type { LLMProvider, Message, CompletionOptions, CompletionResult, StreamE
 import { createAnthropicProvider } from './providers/anthropic';
 import { createGoogleProvider } from './providers/google';
 
+export { PROVIDER_CATALOG, DEFAULT_MODEL_ID, AVAILABLE_PROVIDERS, getProviderCatalog, getModelFromCatalog } from './catalog';
+export type { ProviderCatalog, ModelCatalogItem, ProviderAvailability } from './catalog';
 
 // ──────────────────────────────────────────────
-// Provider registry
-//
-// Add new providers here as they are implemented.
-// e.g. 'openai', 'ollama', 'openrouter'
+// Provider registry (OpenAI can be added in future)
 // ──────────────────────────────────────────────
 
 const PROVIDERS = {
@@ -19,14 +18,9 @@ const PROVIDERS = {
 
 type ProviderName = keyof typeof PROVIDERS;
 
-
-// Config shapes per provider
 interface ProviderConfigs {
   anthropic: { apiKey: string };
   google: { apiKey: string };
-  // openai:     { apiKey: string };
-  // ollama:     { baseUrl?: string };
-  // openrouter: { apiKey: string };
 }
 
 
