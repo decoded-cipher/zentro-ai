@@ -4,52 +4,51 @@ import { eq, asc } from 'drizzle-orm';
 import { createProvider } from '@repo/llm';
 import { decryptApiKey } from '@repo/crypto';
 import { db, project as projectTable, prompt as promptTable, apiKey, withDefaults } from '@repo/db';
+
 import { getSystemPrompt } from '../helpers/prompts';
 import { broadcastToSSE } from '../helpers/sse';
-
 import { parseArtifacts } from './parser';
 import { executeArtifact } from './executor';
 
 
 const BASE_WORK_DIR = '/tmp/zentro';
-const maxTokens = Number(process.env.CLAUDE_MAX_TOKENS!);
+const maxTokens = Number(process.env.CLAUDE_MAX_TOKENS || 0);
 
 const DEFAULT_PROVIDER = 'anthropic';
 const DEFAULT_MODEL = process.env.CLAUDE_REASONING_MODEL || '';
-
-const ENV_API_KEYS: Record<string, string> = {
-  anthropic: process.env.CLAUDE_API_KEY || '',
-  google: process.env.GEMINI_API_KEY || '',
-};
+const DEFAULT_PROVIDER_KEY = process.env.CLAUDE_API_KEY || '';
 
 const providerCache = new Map();
 
+
+
+// Get API key to use for a given provider
 async function resolveApiKey(providerName) {
   const rows = await db
     .select({ encryptedKey: apiKey.encryptedKey, active: apiKey.active })
     .from(apiKey)
     .where(eq(apiKey.providerId, providerName));
+
   const activeRow = rows.find((r) => r.active === 1);
-  if (activeRow) {
-    return decryptApiKey(activeRow.encryptedKey);
-  }
-  if (rows.length === 0) {
-    return ENV_API_KEYS[providerName] || '';
-  }
-  return '';
+  if (activeRow) return decryptApiKey(activeRow.encryptedKey);
+
+  if (providerName === 'anthropic') return DEFAULT_PROVIDER_KEY;
+  throw new Error(`No API key for provider: ${providerName}. Add your key in Settings > Models.`);
 }
 
 function getProvider(providerName, apiKey) {
   const name = providerName || DEFAULT_PROVIDER;
   const cacheKey = `${name}:${apiKey.slice(0, 8)}`;
-  if (providerCache.has(cacheKey)) return providerCache.get(cacheKey)!;
+  if (providerCache.has(cacheKey)) return providerCache.get(cacheKey);
 
-  const provider = createProvider(name as any, { apiKey });
+  const provider = createProvider(name, { apiKey });
   providerCache.set(cacheKey, provider);
   return provider;
 }
 
 
+
+// Generates a project name based on user's prompt
 async function generateProjectName(projectId, promptText, providerName, apiKey) {
     try {
         const llm = getProvider(providerName, apiKey);
@@ -76,7 +75,7 @@ async function generateProjectName(projectId, promptText, providerName, apiKey) 
 
 
 // Processes a chat prompt for a given project
-export async function processChat(projectId: string, promptText: string) {
+export async function processChat(projectId, promptText) {
     try {
         
         // 1. Get provider + model preference
@@ -86,14 +85,13 @@ export async function processChat(projectId: string, promptText: string) {
             .where(eq(projectTable.id, projectId))
             .limit(1);
         
-        const modelConfig = projectRow?.model as { provider: string; name: string } | null;
+        const modelConfig = projectRow?.model;
         const providerName = modelConfig?.provider || DEFAULT_PROVIDER;
         const reasoningModel = modelConfig?.name || DEFAULT_MODEL;
 
-        const apiKey = await resolveApiKey(providerName);
-        if (!apiKey) throw new Error(`No API key for provider: ${providerName}. Add your key in Settings > Models.`);
-
-        const llm = getProvider(providerName, apiKey);
+        const key = await resolveApiKey(providerName);
+        if (!key) throw new Error(`No API key for provider: ${providerName}. Add your key in Settings > Models.`);
+        const llm = getProvider(providerName, key);
 
         // 2. Save user prompt
         const [userPrompt] = await db.insert(promptTable).values(withDefaults({
@@ -112,12 +110,12 @@ export async function processChat(projectId: string, promptText: string) {
 
         // 4. Generate project name
         if (allMessages.length === 1) {
-            generateProjectName(projectId, promptText, providerName, apiKey);
+            generateProjectName(projectId, promptText, providerName, key);
         }
 
         // 5. Convert to message format
         const messages = allMessages.map(msg => ({
-            role: (msg.type === 'USER' ? 'user' : 'assistant') as 'user' | 'assistant',
+            role: msg.type === 'USER' ? 'user' : 'assistant',
             content: msg.text
         }));
 
@@ -126,8 +124,8 @@ export async function processChat(projectId: string, promptText: string) {
         
         // 7. Call LLM with streaming
         let fullResponse = "";
-        let userInputTokens: number | null = null;
-        let assistantOutputTokens: number | null = null;
+        let userInputTokens = null;
+        let assistantOutputTokens = null;
 
         for await (const event of llm.stream({
             model: reasoningModel,
